@@ -4,7 +4,8 @@ const path = require("node:path");
 
 const root = __dirname;
 const port = Number(process.env.PORT || 4173);
-const model = process.env.OPENAI_MODEL || "gpt-4.1";
+const model = process.env.OPENROUTER_MODEL || "x-ai/grok-4";
+const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -44,27 +45,24 @@ function readBody(req) {
 }
 
 function extractText(data) {
-  if (typeof data.output_text === "string" && data.output_text.trim()) {
-    return data.output_text;
-  }
-
-  const chunks = [];
-  for (const item of data.output || []) {
-    for (const content of item.content || []) {
-      if (typeof content.text === "string") chunks.push(content.text);
-    }
-  }
-  return chunks.join("\n").trim();
+  return data.choices?.[0]?.message?.content || "";
 }
 
-function buildInput(payload) {
+function buildMessages(payload) {
   const recent = Array.isArray(payload.messages) ? payload.messages.slice(-12) : [];
-  const messages = recent
+  const messages = [
+    {
+      role: "system",
+      content: String(payload.system || "")
+    }
+  ];
+
+  messages.push(...recent
     .filter((message) => message && (message.role === "user" || message.role === "assistant" || message.role === "master"))
     .map((message) => ({
       role: message.role === "master" ? "assistant" : message.role,
       content: String(message.content || "")
-    }));
+    })));
 
   messages.push({
     role: "user",
@@ -92,30 +90,32 @@ async function handleLeelaChat(req, res) {
     sendJson(res, 405, { error: "Method not allowed" });
     return;
   }
-  if (!process.env.OPENAI_API_KEY) {
-    sendJson(res, 500, { error: "OPENAI_API_KEY is not set" });
+  if (!process.env.OPENROUTER_API_KEY) {
+    sendJson(res, 500, { error: "OPENROUTER_API_KEY is not set" });
     return;
   }
 
   try {
     const payload = JSON.parse(await readBody(req));
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await fetch(openRouterUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "http://localhost:4173",
+        "X-OpenRouter-Title": process.env.OPENROUTER_APP_TITLE || "Leela GPT Chat"
       },
       body: JSON.stringify({
         model,
-        instructions: payload.system,
-        input: buildInput(payload),
-        max_output_tokens: 900
+        messages: buildMessages(payload),
+        max_tokens: 900,
+        temperature: 0.85
       })
     });
 
     const data = await response.json();
     if (!response.ok) {
-      sendJson(res, response.status, { error: data.error?.message || "OpenAI API error" });
+      sendJson(res, response.status, { error: data.error?.message || "OpenRouter API error" });
       return;
     }
 

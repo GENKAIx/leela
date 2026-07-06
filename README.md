@@ -18,23 +18,24 @@
 
 Такой режим не требует сборки, сервера или внешних зависимостей.
 
-Для настоящего общения с GPT запустите локальный сервер:
+Для настоящего общения с Grok через OpenRouter запустите локальный сервер:
 
 ```powershell
-$env:OPENAI_API_KEY="ваш_ключ"
+$env:OPENROUTER_API_KEY="ваш_ключ"
+$env:OPENROUTER_MODEL="x-ai/grok-4"
 node server.js
 ```
 
 После этого откройте `http://localhost:4173`.
 
-## Подключение GPT
+## Подключение LLM
 
 В файле `outputs/leela-vector-game.html` есть константа `GPT_ENDPOINT`. По умолчанию она использует `/api/leela-chat`, когда страница открыта через сервер.
 
-Endpoint должен безопасно хранить API-ключ и возвращать JSON:
+Backend `server.js` ходит в OpenRouter Chat Completions API и по умолчанию использует модель `x-ai/grok-4`. Endpoint безопасно хранит API-ключ на сервере и возвращает JSON:
 
 ```json
 { "reply": "текст ответа Мастера" }
 ```
 
-Не кладите OpenAI API key прямо в HTML: при публикации на GitHub Pages он станет виден всем.
+Не кладите OpenRouter API key прямо в HTML: при публикации на GitHub Pages он станет виден всем.
