@@ -110,11 +110,9 @@
     }
 
     .answer-view {
-      display: grid;
-      grid-template-rows: 1fr auto;
+      display: block;
       padding: clamp(18px, 3vw, 34px);
-      gap: 18px;
-      overflow: hidden;
+      overflow: auto;
     }
 
     .roll-view {
@@ -173,11 +171,11 @@
     }
 
     .messages {
-      overflow: auto;
       display: flex;
       flex-direction: column;
       gap: 14px;
       padding-right: 8px;
+      min-height: 100%;
     }
 
     .message {
@@ -325,32 +323,6 @@
       color: #fff8e9;
       font-weight: 900;
       font-size: 13px;
-    }
-
-    .cell-card {
-      border-top: 2px solid rgba(64, 49, 38, 0.22);
-      padding-top: 14px;
-      display: grid;
-      gap: 6px;
-    }
-
-    .cell-kicker {
-      font-size: 12px;
-      color: var(--blue);
-      font-weight: 850;
-      text-transform: uppercase;
-    }
-
-    .cell-title {
-      font-size: 22px;
-      font-weight: 900;
-      line-height: 1.1;
-    }
-
-    .cell-lesson {
-      margin: 0;
-      color: #453528;
-      line-height: 1.42;
     }
 
     .thinking-view {
@@ -827,11 +799,6 @@
     <section class="stage answer" id="stage">
       <div class="answer-view">
         <div class="messages" id="messages"></div>
-        <section class="cell-card" id="cellCard">
-          <div class="cell-kicker">Пространство Лилы</div>
-          <div class="cell-title">Кристаллическое зеркало истины</div>
-          <p class="cell-lesson">Напиши запрос любыми словами. Первый ответ станет Намерением игры.</p>
-        </section>
       </div>
 
       <div class="roll-view">
@@ -930,7 +897,6 @@
 
     const stage = document.getElementById("stage");
     const messages = document.getElementById("messages");
-    const cellCard = document.getElementById("cellCard");
     const stateLine = document.getElementById("stateLine");
     const composer = document.getElementById("composer");
     const userInput = document.getElementById("userInput");
@@ -1161,24 +1127,6 @@
       stateLine.textContent = `Клетка ${state.position}: ${cellNames[state.position - 1]}${state.lastRoll ? ` | последний бросок ${state.lastRoll}` : ""}`;
     }
 
-    function updateCellCard(n = state.position) {
-      if (!n) {
-        cellCard.innerHTML = `
-          <div class="cell-kicker">Пространство Лилы</div>
-          <div class="cell-title">Кристаллическое зеркало истины</div>
-          <p class="cell-lesson">Напиши запрос любыми словами. Первый ответ станет Намерением игры.</p>
-        `;
-        return;
-      }
-      const jump = jumps[n];
-      cellCard.innerHTML = `
-        <div class="cell-kicker">Клетка ${n}</div>
-        <div class="cell-title">${cellNames[n - 1]}</div>
-        <p class="cell-lesson">${lessons[n - 1]}</p>
-        <p class="cell-lesson">${jump ? `${jump > n ? "Стрела" : "Змея"} ведет на ${jump}: ${cellNames[jump - 1]}.` : "На этой клетке нет перехода."}</p>
-      `;
-    }
-
     function cellPoint(n) {
       const index = n - 1;
       const visualRowFromBottom = Math.floor(index / cols);
@@ -1296,7 +1244,6 @@
       document.querySelectorAll(".cell.current").forEach((c) => c.classList.remove("current"));
       const cell = document.querySelector(`[data-cell="${state.position}"]`);
       if (cell) cell.classList.add("current");
-      updateCellCard(state.position);
       updateStateLine();
     }
 
@@ -1602,7 +1549,6 @@
       }
 
       addMessage("master", reply, move);
-      updateCellCard(state.position);
       updateStateLine();
       setStage("answer");
 
@@ -1640,7 +1586,6 @@
       }
     });
     placeToken();
-    updateCellCard(0);
     updateStateLine();
     addMessage("master", "Я приветствую тебя в пространстве Лилы.\n\nНапиши свой запрос к игре любыми словами. Первый ответ станет твоим Намерением, после него будет сделан бросок на вход. Войти можно только через 6.");
   </script>
