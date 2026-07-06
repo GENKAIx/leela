@@ -78,6 +78,7 @@
     .answer-view,
     .roll-view,
     .board-view,
+    .cell-view,
     .thinking-view {
       grid-area: 1 / 1;
       min-height: 0;
@@ -91,6 +92,7 @@
     .stage.answer .answer-view,
     .stage.roll .roll-view,
     .stage.board .board-view,
+    .stage.cell .cell-view,
     .stage.thinking .thinking-view {
       opacity: 1;
       pointer-events: auto;
@@ -236,13 +238,6 @@
       height: 38px;
     }
 
-    .move-kicker {
-      color: var(--blue);
-      font-size: 12px;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
     .move-title {
       margin-top: 3px;
       font-size: clamp(19px, 2.6vw, 27px);
@@ -250,24 +245,34 @@
       line-height: 1.08;
     }
 
-    .move-meta {
+    .move-route {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: flex-end;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-width: 124px;
+      font-weight: 950;
+      color: var(--ink);
     }
 
-    .move-pill {
+    .route-node {
       border: 2px solid rgba(64, 49, 38, 0.22);
       background: rgba(255, 248, 233, 0.74);
-      padding: 7px 9px;
-      font-size: 12px;
-      font-weight: 850;
-      color: #423327;
+      min-width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      font-size: 15px;
     }
 
-    .move-pill.up { color: #2f6732; border-color: rgba(77, 134, 72, 0.46); }
-    .move-pill.down { color: #8a5d11; border-color: rgba(211, 155, 54, 0.58); }
+    .route-arrow {
+      color: var(--red);
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .route-arrow.up { color: var(--green); }
+    .route-arrow.down { color: var(--gold); }
 
     .move-card-body {
       display: grid;
@@ -594,34 +599,9 @@
       animation: activePath 760ms ease-in-out infinite alternate;
     }
 
-    .move-trail {
-      fill: none;
-      stroke: rgba(184, 69, 54, 0.9);
-      stroke-width: 7;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      marker-end: url(#stepHead);
-      filter: drop-shadow(0 0 8px rgba(255, 248, 233, 0.86)) drop-shadow(0 3px 4px rgba(32, 24, 19, 0.28));
-      stroke-dasharray: 1;
-      stroke-dashoffset: 1;
-      animation: traceStep 780ms ease-out forwards;
-    }
-
-    .move-trail.fade {
-      animation: traceFade 900ms ease forwards;
-    }
-
     @keyframes activePath {
       from { stroke-dasharray: 10 10; stroke-dashoffset: 20; }
       to { stroke-dasharray: 18 8; stroke-dashoffset: 0; }
-    }
-
-    @keyframes traceStep {
-      to { stroke-dashoffset: 0; }
-    }
-
-    @keyframes traceFade {
-      to { opacity: 0; }
     }
 
     @keyframes cellStepPulse {
@@ -723,6 +703,51 @@
       100% { rotate: 0deg; scale: 1; }
     }
 
+    .cell-view {
+      display: grid;
+      place-items: center;
+      padding: clamp(24px, 4vw, 52px);
+      background:
+        radial-gradient(circle at 50% 35%, rgba(211, 155, 54, 0.28), transparent 18rem),
+        linear-gradient(180deg, #fff8e9, #f2dfbd);
+    }
+
+    .cell-reveal {
+      display: grid;
+      place-items: center;
+      gap: 18px;
+      text-align: center;
+      animation: cellReveal 900ms cubic-bezier(.2,.8,.2,1);
+    }
+
+    .cell-reveal-number {
+      width: clamp(82px, 16vmin, 130px);
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border: 4px solid var(--line);
+      background: #fffaf0;
+      color: var(--red);
+      font: 950 clamp(34px, 7vmin, 64px) / 1 "Segoe UI", Arial, sans-serif;
+      box-shadow: inset 0 -9px 0 rgba(32, 24, 19, 0.08), 0 18px 44px rgba(32, 24, 19, 0.18);
+    }
+
+    .cell-reveal-title {
+      max-width: min(760px, 100%);
+      color: var(--ink);
+      font: 950 clamp(30px, 6vw, 68px) / 1.02 "Segoe UI", Arial, sans-serif;
+    }
+
+    .cell-reveal-subtitle {
+      color: var(--muted);
+      font-weight: 850;
+    }
+
+    @keyframes cellReveal {
+      from { opacity: 0; transform: translateY(18px) scale(0.96); filter: blur(10px); }
+      to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+
     .composer {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 140px;
@@ -808,6 +833,14 @@
         </div>
       </div>
 
+      <div class="cell-view">
+        <div class="cell-reveal">
+          <div class="cell-reveal-number" id="cellRevealNumber">1</div>
+          <div class="cell-reveal-title" id="cellRevealTitle">Рождение</div>
+          <div class="cell-reveal-subtitle">Клетка открыта</div>
+        </div>
+      </div>
+
       <div class="board-view">
         <div class="board-wrap" id="boardWrap">
           <svg class="plane-bands" viewBox="0 0 800 900" aria-hidden="true">
@@ -824,9 +857,6 @@
               </marker>
               <marker id="arrowHeadGold" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
                 <path d="M 0 0 L 10 5 L 0 10 z" fill="#d39b36"></path>
-              </marker>
-              <marker id="stepHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.8" markerHeight="3.8" orient="auto">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#b84536"></path>
               </marker>
             </defs>
           </svg>
@@ -885,6 +915,8 @@
     const sendButton = document.getElementById("sendButton");
     const board = document.getElementById("board");
     const boardWrap = document.getElementById("boardWrap");
+    const cellRevealNumber = document.getElementById("cellRevealNumber");
+    const cellRevealTitle = document.getElementById("cellRevealTitle");
     const token = document.getElementById("token");
     const die = document.getElementById("die");
     const rollDie = document.getElementById("rollDie");
@@ -1045,9 +1077,9 @@
     function renderMasterCard(text, move) {
       if (!move) return escapeHtml(text);
       const cellTitle = move.enteredNow || move.enteredBefore ? `${move.position}. ${move.cell}` : "Порог игры";
-      const transition = move.transition;
-      const transitionLabel = transition ? `${transition.type}: ${transition.from} -> ${transition.to}` : "без переноса";
-      const transitionClass = transition ? (transition.to > transition.from ? "up" : "down") : "";
+      const routeFrom = move.enteredNow ? "Порог" : move.from || "Порог";
+      const routeTo = move.enteredNow || move.enteredBefore ? move.position : "Порог";
+      const routeType = move.transition ? (move.transition.to > move.transition.from ? "up" : "down") : "";
       const { sections, questions } = splitReply(text);
       const sectionHtml = sections.map((section) => `
         <section class="move-section">
@@ -1073,13 +1105,12 @@
         <div class="move-card-head">
           <div class="move-icon">${diceMiniSvg(move.roll)}</div>
           <div>
-            <div class="move-kicker">${move.enteredNow ? "Вход открыт" : move.enteredBefore ? "Ход по доске" : "Бросок у порога"}</div>
             <div class="move-title">${escapeHtml(cellTitle)}</div>
           </div>
-          <div class="move-meta">
-            <span class="move-pill">Кубик: ${move.roll}</span>
-            <span class="move-pill">Позиция: ${move.enteredNow || move.enteredBefore ? move.position : "порог"}</span>
-            <span class="move-pill ${transitionClass}">${escapeHtml(transitionLabel)}</span>
+          <div class="move-route" aria-label="Маршрут хода">
+            <span class="route-node">${escapeHtml(routeFrom)}</span>
+            <span class="route-arrow ${routeType}">-></span>
+            <span class="route-node">${escapeHtml(routeTo)}</span>
           </div>
         </div>
         <div class="move-card-body">${sectionHtml}${questionHtml}</div>
@@ -1289,27 +1320,6 @@
       updateStateLine();
     }
 
-    function clearMoveTrail() {
-      pathLines.querySelectorAll(".move-trail").forEach((node) => node.remove());
-    }
-
-    function drawTrailBetweenPoints(start, end) {
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path.setAttribute("class", "move-trail");
-      path.setAttribute("d", `M ${start.x} ${start.y} L ${end.x} ${end.y}`);
-      pathLines.appendChild(path);
-      const length = path.getTotalLength();
-      path.style.strokeDasharray = String(length);
-      path.style.strokeDashoffset = String(length);
-      window.setTimeout(() => path.classList.add("fade"), 3200);
-      window.setTimeout(() => path.remove(), 4300);
-    }
-
-    function drawMoveTrail(from, to) {
-      if (!from || !to || from === to) return;
-      drawTrailBetweenPoints(cellPoint(from), cellPoint(to));
-    }
-
     function pulseCell(n) {
       const cell = document.querySelector(`.cell[data-cell="${n}"]`);
       if (!cell) return;
@@ -1322,9 +1332,7 @@
     async function animateTo(target) {
       const direction = target >= state.position ? 1 : -1;
       while (state.position !== target) {
-        const from = state.position;
         const next = state.position + direction;
-        drawMoveTrail(from, next);
         state.position = next;
         token.classList.add("step");
         placeToken();
@@ -1406,6 +1414,13 @@
       await animateJump(from, to);
     }
 
+    async function revealCellScreen() {
+      cellRevealNumber.textContent = String(state.position);
+      cellRevealTitle.textContent = cellNames[state.position - 1];
+      setStage("cell");
+      await sleep(3000);
+    }
+
     async function showBoardForMove(roll) {
       setStage("roll");
       await sleep(360);
@@ -1414,20 +1429,22 @@
 
       setStage("board");
       die.innerHTML = diceSvg(roll);
-      clearMoveTrail();
       await sleep(860);
 
       let transition = null;
+      const moveFrom = state.position;
       if (!state.entered) {
         if (roll === 6) {
           state.entered = true;
           state.position = 1;
           placeToken();
           pulseCell(1);
-          await sleep(900);
+          await sleep(2000);
+          await revealCellScreen();
+          return { transition, from: moveFrom, to: state.position, revealed: true };
         }
         await sleep(900);
-        return transition;
+        return { transition, from: moveFrom, to: state.position, revealed: false };
       }
 
       let target = state.position + roll;
@@ -1441,8 +1458,9 @@
         await dramaticTransfer(from, to);
       }
 
-      await sleep(700);
-      return transition;
+      await sleep(2000);
+      await revealCellScreen();
+      return { transition, from: moveFrom, to: state.position, revealed: true };
     }
 
     function buildLocalPromptContext(move) {
@@ -1497,14 +1515,17 @@
       return `Бросок: ${move.roll}. Клетка ${ctx.n} — ${ctx.cellName}.\n\n${ctx.lesson}\n\nРазбор: смотри не на название клетки, а на то, что оно делает с твоим Намерением: ${state.intention}. Эта клетка показывает не идею, а привычный способ защиты. Там, где ты говоришь “я разбираюсь”, может быть контроль. Там, где говоришь “я принимаю”, может быть усталость бороться. Там, где говоришь “мне все равно”, часто лежит не свобода, а отказ чувствовать цену выбора.${transitionText}\n\n1. Какую выгоду тебе дает оставаться в этой клетке?\n2. Какую часть ответа ты сейчас пытаешься сделать умной, чтобы не сделать ее честной?`;
     }
 
-    function makeMoveResult(roll, transition, enteredBefore) {
+    function makeMoveResult(roll, boardMove, enteredBefore) {
       return {
         roll,
         enteredBefore,
         enteredNow: !enteredBefore && state.entered,
+        from: boardMove.from,
+        to: boardMove.to,
+        revealed: boardMove.revealed,
         position: state.position,
         cell: state.position ? cellNames[state.position - 1] : null,
-        transition
+        transition: boardMove.transition
       };
     }
 
@@ -1522,11 +1543,16 @@
 
       const enteredBefore = state.entered;
       const roll = rollDiceValue();
-      const transition = await showBoardForMove(roll);
-      const move = makeMoveResult(roll, transition, enteredBefore);
+      const boardMove = await showBoardForMove(roll);
+      const move = makeMoveResult(roll, boardMove, enteredBefore);
 
-      setStage("thinking");
-      await sleep(2300);
+      if (move.revealed) {
+        setStage("answer");
+        await sleep(260);
+      } else {
+        setStage("thinking");
+        await sleep(2300);
+      }
 
       let reply;
       try {
