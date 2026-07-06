@@ -754,6 +754,13 @@
       gap: 10px;
     }
 
+    .send-stack {
+      display: grid;
+      grid-template-rows: minmax(64px, auto) 38px;
+      gap: 8px;
+      min-width: 0;
+    }
+
     textarea {
       width: 100%;
       min-height: 64px;
@@ -780,6 +787,22 @@
     button:hover { background: #3a2c22; }
     button:active { transform: translateY(1px); }
     button:disabled { opacity: 0.55; cursor: wait; }
+
+    .api-key-input {
+      width: 100%;
+      min-width: 0;
+      height: 38px;
+      border: 2px solid var(--line);
+      background: rgba(255, 248, 233, 0.9);
+      color: var(--ink);
+      font: 12px / 1.2 "Segoe UI", Arial, sans-serif;
+      padding: 0 10px;
+      box-shadow: 0 10px 22px rgba(32, 24, 19, 0.09);
+    }
+
+    .api-key-input::placeholder {
+      color: rgba(92, 75, 58, 0.62);
+    }
 
     @media (max-width: 720px) {
       .topbar { align-items: start; flex-direction: column; }
@@ -870,7 +893,10 @@
 
     <form class="composer" id="composer">
       <textarea id="userInput" placeholder="Ответь Мастеру Лилы..." autocomplete="off"></textarea>
-      <button id="sendButton" type="submit">Отправить</button>
+      <div class="send-stack">
+        <button id="sendButton" type="submit">Отправить</button>
+        <input id="apiKeyInput" class="api-key-input" type="password" placeholder="OpenRouter API key" autocomplete="off" spellcheck="false" aria-label="OpenRouter API key">
+      </div>
     </form>
   </main>
 
@@ -913,6 +939,7 @@
     const composer = document.getElementById("composer");
     const userInput = document.getElementById("userInput");
     const sendButton = document.getElementById("sendButton");
+    const apiKeyInput = document.getElementById("apiKeyInput");
     const board = document.getElementById("board");
     const boardWrap = document.getElementById("boardWrap");
     const cellRevealNumber = document.getElementById("cellRevealNumber");
@@ -1487,9 +1514,15 @@
 
     async function askGpt(userText, move) {
       if (GPT_ENDPOINT) {
+        const headers = { "Content-Type": "application/json" };
+        const apiKey = apiKeyInput.value.trim();
+        if (apiKey) {
+          headers["X-OpenRouter-API-Key"] = apiKey;
+        }
+
         const response = await fetch(GPT_ENDPOINT, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({
             system: SYSTEM_PROMPT,
             state,
@@ -1634,6 +1667,15 @@
     token.innerHTML = tokenSvg();
     die.innerHTML = diceSvg(1);
     rollDie.innerHTML = diceSvg(1);
+    apiKeyInput.value = sessionStorage.getItem("openrouter_api_key") || "";
+    apiKeyInput.addEventListener("input", () => {
+      const value = apiKeyInput.value.trim();
+      if (value) {
+        sessionStorage.setItem("openrouter_api_key", value);
+      } else {
+        sessionStorage.removeItem("openrouter_api_key");
+      }
+    });
     placeToken();
     updateCellCard(0);
     updateStateLine();

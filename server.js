@@ -42,7 +42,7 @@ function sendJson(res, status, body) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-OpenRouter-API-Key",
     "Access-Control-Allow-Methods": "POST, OPTIONS"
   });
   res.end(JSON.stringify(body));
@@ -109,7 +109,11 @@ async function handleLeelaChat(req, res) {
     sendJson(res, 405, { error: "Method not allowed" });
     return;
   }
-  if (!process.env.OPENROUTER_API_KEY) {
+
+  const requestApiKey = req.headers["x-openrouter-api-key"];
+  const headerApiKey = Array.isArray(requestApiKey) ? requestApiKey[0] : requestApiKey;
+  const openRouterApiKey = String(headerApiKey || process.env.OPENROUTER_API_KEY || "").trim();
+  if (!openRouterApiKey) {
     sendJson(res, 500, { error: "OPENROUTER_API_KEY is not set" });
     return;
   }
@@ -120,7 +124,7 @@ async function handleLeelaChat(req, res) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Authorization": `Bearer ${openRouterApiKey}`,
         "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "http://localhost:4173",
         "X-OpenRouter-Title": process.env.OPENROUTER_APP_TITLE || "Leela GPT Chat"
       },
