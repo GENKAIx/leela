@@ -84,6 +84,11 @@
       overflow: hidden;
     }
 
+    .board-wrap.transfer-mode .plane-bands {
+      opacity: 0.12;
+      filter: grayscale(0.6);
+    }
+
     .plane-bands,
     .path-lines {
       position: absolute;
@@ -112,13 +117,28 @@
       background: rgba(255, 248, 233, 0.82);
       overflow: hidden;
       cursor: pointer;
-      transition: background 150ms ease, box-shadow 150ms ease;
+      transition: background 150ms ease, box-shadow 150ms ease, opacity 180ms ease, filter 180ms ease, transform 180ms ease;
     }
 
     .cell:nth-child(2n) { background: rgba(243, 227, 197, 0.86); }
     .cell:hover { box-shadow: inset 0 0 0 3px rgba(35, 109, 134, 0.45); }
     .cell.goal { background: rgba(255, 224, 128, 0.88); }
     .cell.current { box-shadow: inset 0 0 0 4px rgba(184, 69, 54, 0.75); }
+
+    .board-wrap.transfer-mode .cell:not(.transfer-focus) {
+      opacity: 0.2;
+      filter: grayscale(0.85) brightness(0.65);
+    }
+
+    .cell.transfer-focus {
+      opacity: 1;
+      z-index: 2;
+      transform: scale(1.035);
+      box-shadow:
+        inset 0 0 0 4px rgba(255, 248, 233, 0.94),
+        inset 0 0 0 7px rgba(211, 155, 54, 0.88),
+        0 0 20px rgba(211, 155, 54, 0.58);
+    }
 
     .cell-number {
       position: absolute;
@@ -150,7 +170,7 @@
       stroke-width: 3.5;
       stroke-linecap: round;
       stroke-linejoin: round;
-      opacity: 0.46;
+      opacity: 0;
       filter: drop-shadow(0 1px 1px rgba(32, 24, 19, 0.14));
       transition: opacity 180ms ease, stroke-width 180ms ease, filter 180ms ease;
     }
@@ -568,6 +588,7 @@
     const rows = 9;
 
     const board = document.getElementById("board");
+    const boardWrap = document.getElementById("boardWrap");
     const token = document.getElementById("token");
     const rollButton = document.getElementById("rollButton");
     const resetButton = document.getElementById("resetButton");
@@ -908,6 +929,16 @@
       if (path) path.classList.toggle("active", active);
     }
 
+    function setTransferFocus(from, to, active) {
+      boardWrap.classList.toggle("transfer-mode", active);
+      document.querySelectorAll(".cell.transfer-focus").forEach((cell) => cell.classList.remove("transfer-focus"));
+      if (!active) return;
+      [from, to].forEach((n) => {
+        const cell = document.querySelector(`.cell[data-cell="${n}"]`);
+        if (cell) cell.classList.add("transfer-focus");
+      });
+    }
+
     function createTransferParticles(curve, type) {
       const count = type === "up" ? 14 : 11;
       for (let i = 0; i < count; i++) {
@@ -930,6 +961,7 @@
       const curve = jumpCurve(from, to);
       const type = to > from ? "up" : "down";
       const duration = Math.min(1250, Math.max(560, Math.abs(to - from) * 22));
+      setTransferFocus(from, to, true);
       setActiveJump(from, to, true);
       createTransferParticles(curve, type);
       token.classList.add(type === "up" ? "boost" : "drop");
@@ -948,6 +980,7 @@
           state.position = to;
           token.classList.remove("boost", "drop");
           setActiveJump(from, to, false);
+          setTransferFocus(from, to, false);
           placeToken();
           resolve();
         }
@@ -980,6 +1013,7 @@
       const from = readDebugCell();
       const to = jumps[from];
       if (!to) {
+        setTransferFocus(from, from, false);
         updateDebugHint(from);
         showCellCard(from, "Отладка");
         return;
@@ -990,7 +1024,9 @@
       debugJumpButton.disabled = true;
       state.position = from;
       placeToken();
-      await sleep(160);
+      setTransferFocus(from, to, true);
+      setActiveJump(from, to, true);
+      await sleep(520);
       await animateJump(from, to);
       writeLog(`Отладка: ${from} -> ${to} по линии.`);
       rollButton.disabled = state.position === totalCells;
@@ -1026,11 +1062,14 @@
       await animateTo(target);
 
       if (jumps[state.position]) {
-        const next = jumps[state.position];
+        const from = state.position;
+        const next = jumps[from];
         const up = next > state.position;
-        writeLog(`${cellNames[state.position - 1]}: ${up ? "подъем" : "возврат"} на ${next}.`);
-        await sleep(320);
-        await animateJump(state.position, next);
+        writeLog(`${cellNames[from - 1]}: ${up ? "подъем" : "возврат"} на ${next}.`);
+        setTransferFocus(from, next, true);
+        setActiveJump(from, next, true);
+        await sleep(620);
+        await animateJump(from, next);
       }
 
       if (state.position === totalCells) {
@@ -1049,6 +1088,7 @@
       die.innerHTML = diceSvg(1);
       log.innerHTML = "";
       rollButton.disabled = false;
+      setTransferFocus(1, 1, false);
       placeToken();
       writeLog("Новая партия началась.");
     }
