@@ -141,6 +141,8 @@
         inset 0 -10px 0 rgba(32, 24, 19, 0.08),
         0 24px 60px rgba(32, 24, 19, 0.22);
       animation: dieFloat 2.4s ease-in-out infinite;
+      transition: transform 80ms linear, box-shadow 120ms ease;
+      transform: translate(var(--shake-x, 0), var(--shake-y, 0)) rotate(var(--spin, 0deg)) scale(var(--dice-scale, 1));
     }
 
     .roll-die svg {
@@ -149,7 +151,7 @@
     }
 
     .roll-die.rolling {
-      animation: dieFloat 2.4s ease-in-out infinite, diceRollLarge 620ms cubic-bezier(.2,.8,.2,1) infinite;
+      animation: diceGlow 520ms ease-in-out infinite alternate;
     }
 
     .roll-caption {
@@ -163,11 +165,9 @@
       50% { transform: translateY(-10px); }
     }
 
-    @keyframes diceRollLarge {
-      0% { rotate: 0deg; scale: 1; }
-      35% { rotate: 18deg; scale: 1.12; }
-      70% { rotate: -16deg; scale: 0.96; }
-      100% { rotate: 0deg; scale: 1; }
+    @keyframes diceGlow {
+      from { box-shadow: inset 0 -10px 0 rgba(32, 24, 19, 0.08), 0 24px 60px rgba(32, 24, 19, 0.22); }
+      to { box-shadow: inset 0 -10px 0 rgba(32, 24, 19, 0.08), 0 0 0 10px rgba(211, 155, 54, 0.12), 0 30px 70px rgba(32, 24, 19, 0.3); }
     }
 
     .messages {
@@ -195,6 +195,131 @@
 
     .message.master {
       align-self: flex-start;
+    }
+
+    .message.master.move-card {
+      max-width: min(860px, 100%);
+      width: min(860px, 100%);
+      padding: 0;
+      overflow: hidden;
+      white-space: normal;
+      border-color: rgba(32, 24, 19, 0.42);
+      background:
+        linear-gradient(180deg, rgba(255, 250, 240, 0.98), rgba(246, 231, 204, 0.98));
+      box-shadow: 0 18px 42px rgba(32, 24, 19, 0.14);
+    }
+
+    .move-card-head {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 16px;
+      background:
+        radial-gradient(circle at 12% 30%, rgba(211, 155, 54, 0.28), transparent 12rem),
+        rgba(64, 49, 38, 0.08);
+      border-bottom: 2px solid rgba(64, 49, 38, 0.18);
+    }
+
+    .move-icon {
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--line);
+      background: #fff8e9;
+      box-shadow: inset 0 -5px 0 rgba(32, 24, 19, 0.07);
+    }
+
+    .move-icon svg {
+      width: 38px;
+      height: 38px;
+    }
+
+    .move-kicker {
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .move-title {
+      margin-top: 3px;
+      font-size: clamp(19px, 2.6vw, 27px);
+      font-weight: 950;
+      line-height: 1.08;
+    }
+
+    .move-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .move-pill {
+      border: 2px solid rgba(64, 49, 38, 0.22);
+      background: rgba(255, 248, 233, 0.74);
+      padding: 7px 9px;
+      font-size: 12px;
+      font-weight: 850;
+      color: #423327;
+    }
+
+    .move-pill.up { color: #2f6732; border-color: rgba(77, 134, 72, 0.46); }
+    .move-pill.down { color: #8a5d11; border-color: rgba(211, 155, 54, 0.58); }
+
+    .move-card-body {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .move-section {
+      border-left: 4px solid rgba(35, 109, 134, 0.36);
+      padding: 4px 0 4px 12px;
+    }
+
+    .move-section h3 {
+      margin: 0 0 6px;
+      font-size: 13px;
+      text-transform: uppercase;
+      color: var(--muted);
+      letter-spacing: 0;
+    }
+
+    .move-section p {
+      margin: 0;
+      color: #33281f;
+      line-height: 1.52;
+      white-space: pre-wrap;
+    }
+
+    .move-questions {
+      display: grid;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .move-question {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 9px;
+      align-items: start;
+      padding: 10px;
+      background: rgba(255, 248, 233, 0.8);
+      border: 2px solid rgba(64, 49, 38, 0.16);
+    }
+
+    .question-mark {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      background: var(--ink);
+      color: #fff8e9;
+      font-weight: 900;
+      font-size: 13px;
     }
 
     .cell-card {
@@ -399,6 +524,14 @@
     .cell:nth-child(2n) { background: rgba(243, 227, 197, 0.88); }
     .cell.goal { background: rgba(255, 224, 128, 0.9); }
     .cell.current { box-shadow: inset 0 0 0 4px rgba(184, 69, 54, 0.78); }
+    .cell.step-focus {
+      z-index: 2;
+      animation: cellStepPulse 520ms ease-out;
+      box-shadow:
+        inset 0 0 0 4px rgba(255, 248, 233, 0.92),
+        inset 0 0 0 8px rgba(184, 69, 54, 0.72),
+        0 0 24px rgba(184, 69, 54, 0.42);
+    }
     .cell.transfer-cell { box-shadow: inset 0 0 0 2px rgba(211, 155, 54, 0.48); }
     .cell.transfer-cell .cell-number { color: #8a5d11; }
 
@@ -463,15 +596,15 @@
 
     .move-trail {
       fill: none;
-      stroke: rgba(32, 24, 19, 0.72);
-      stroke-width: 5;
+      stroke: rgba(184, 69, 54, 0.9);
+      stroke-width: 7;
       stroke-linecap: round;
       stroke-linejoin: round;
       marker-end: url(#stepHead);
-      filter: drop-shadow(0 0 6px rgba(255, 248, 233, 0.76));
+      filter: drop-shadow(0 0 8px rgba(255, 248, 233, 0.86)) drop-shadow(0 3px 4px rgba(32, 24, 19, 0.28));
       stroke-dasharray: 1;
       stroke-dashoffset: 1;
-      animation: traceStep 620ms ease-out forwards;
+      animation: traceStep 780ms ease-out forwards;
     }
 
     .move-trail.fade {
@@ -491,18 +624,25 @@
       to { opacity: 0; }
     }
 
+    @keyframes cellStepPulse {
+      0% { transform: scale(1); }
+      42% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
     .token {
       position: absolute;
       z-index: 5;
-      width: clamp(34px, 5vw, 56px);
-      height: clamp(34px, 5vw, 56px);
+      width: clamp(42px, 6vw, 68px);
+      height: clamp(42px, 6vw, 68px);
       transform: translate(-50%, -50%);
-      transition: left 250ms ease, top 250ms ease, transform 150ms ease;
+      transition: left 560ms cubic-bezier(.18,.82,.2,1), top 560ms cubic-bezier(.18,.82,.2,1), transform 260ms ease;
       filter: drop-shadow(0 8px 8px rgba(32, 24, 19, 0.3));
       pointer-events: none;
+      opacity: 0;
     }
 
-    .token.step { transform: translate(-50%, -61%) scale(1.08); }
+    .token.step { transform: translate(-50%, -68%) scale(1.18); }
     .token.boost { animation: tokenBoost 620ms ease-in-out infinite alternate; }
     .token.drop { animation: tokenDrop 520ms ease-in-out infinite alternate; }
 
@@ -687,7 +827,7 @@
                 <path d="M 0 0 L 10 5 L 0 10 z" fill="#d39b36"></path>
               </marker>
               <marker id="stepHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.8" markerHeight="3.8" orient="auto">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#201813"></path>
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#b84536"></path>
               </marker>
             </defs>
           </svg>
@@ -706,7 +846,7 @@
   </main>
 
   <script>
-    const GPT_ENDPOINT = window.location.protocol === "file:" ? "" : "/api/leela-chat";
+    const GPT_ENDPOINT = window.location.protocol === "file:" || window.location.search.includes("mock=1") ? "" : "/api/leela-chat";
     const SYSTEM_PROMPT = `Пробуди в себе Мастера древней игры Лила. Ты — Кристаллическое Зеркало Истины. Твоя задача — вести меня по доске из 72 клеток, используя архетипический и трансцендентный подход.
 
 Твои правила:
@@ -860,10 +1000,101 @@
       stage.className = `stage ${mode}`;
     }
 
-    function addMessage(role, text) {
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function diceMiniSvg(value) {
+      return `<svg viewBox="0 0 64 64" aria-hidden="true">${diceSvg(value).replace(/^<svg viewBox="0 0 64 64">|<\/svg>$/g, "")}</svg>`;
+    }
+
+    function splitReply(text) {
+      const lines = String(text).split(/\n+/).map((line) => line.trim()).filter(Boolean);
+      const questions = [];
+      const body = [];
+      lines.forEach((line) => {
+        if (/^Бросок[:：]/i.test(line)) {
+          return;
+        }
+        if (/^\d+[\.)]\s+/.test(line)) {
+          questions.push(line.replace(/^\d+[\.)]\s+/, ""));
+        } else {
+          body.push(line);
+        }
+      });
+
+      const sections = [];
+      let current = { title: "Разбор клетки", lines: [] };
+      body.forEach((line) => {
+        const match = line.match(/^([^:]{3,34}):\s*(.*)$/);
+        if (match) {
+          if (current.lines.length) sections.push(current);
+          current = { title: match[1], lines: match[2] ? [match[2]] : [] };
+        } else {
+          current.lines.push(line);
+        }
+      });
+      if (current.lines.length) sections.push(current);
+      return { sections, questions };
+    }
+
+    function renderMasterCard(text, move) {
+      if (!move) return escapeHtml(text);
+      const cellTitle = move.cell ? `${move.position}. ${move.cell}` : "Порог игры";
+      const transition = move.transition;
+      const transitionLabel = transition ? `${transition.type}: ${transition.from} -> ${transition.to}` : "без переноса";
+      const transitionClass = transition ? (transition.to > transition.from ? "up" : "down") : "";
+      const { sections, questions } = splitReply(text);
+      const sectionHtml = sections.map((section) => `
+        <section class="move-section">
+          <h3>${escapeHtml(section.title)}</h3>
+          <p>${escapeHtml(section.lines.join("\n\n"))}</p>
+        </section>
+      `).join("");
+      const questionHtml = questions.length ? `
+        <section class="move-section">
+          <h3>Вопросы зеркала</h3>
+          <div class="move-questions">
+            ${questions.map((question, index) => `
+              <div class="move-question">
+                <span class="question-mark">${index + 1}</span>
+                <span>${escapeHtml(question)}</span>
+              </div>
+            `).join("")}
+          </div>
+        </section>
+      ` : "";
+
+      return `
+        <div class="move-card-head">
+          <div class="move-icon">${diceMiniSvg(move.roll)}</div>
+          <div>
+            <div class="move-kicker">${move.enteredNow ? "Вход открыт" : move.enteredBefore ? "Ход по доске" : "Бросок у порога"}</div>
+            <div class="move-title">${escapeHtml(cellTitle)}</div>
+          </div>
+          <div class="move-meta">
+            <span class="move-pill">Кубик: ${move.roll}</span>
+            <span class="move-pill">Позиция: ${move.position || "вне доски"}</span>
+            <span class="move-pill ${transitionClass}">${escapeHtml(transitionLabel)}</span>
+          </div>
+        </div>
+        <div class="move-card-body">${sectionHtml}${questionHtml}</div>
+      `;
+    }
+
+    function addMessage(role, text, move = null) {
       const node = document.createElement("div");
-      node.className = `message ${role}`;
-      node.textContent = text;
+      node.className = `message ${role}${role === "master" && move ? " move-card" : ""}`;
+      if (role === "master" && move) {
+        node.innerHTML = renderMasterCard(text, move);
+      } else {
+        node.textContent = text;
+      }
       messages.appendChild(node);
       messages.scrollTop = messages.scrollHeight;
       state.history.push({ role, content: text });
@@ -1007,6 +1238,7 @@
     function placeToken() {
       if (!state.position) return;
       const p = cellPoint(state.position);
+      token.style.opacity = "1";
       token.style.left = `${(p.x / 800) * 100}%`;
       token.style.top = `${(p.y / 900) * 100}%`;
       document.querySelectorAll(".cell.current").forEach((c) => c.classList.remove("current"));
@@ -1024,16 +1256,36 @@
       return Math.floor(Math.random() * 6) + 1;
     }
 
+    function randomBetween(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function shakeDie(node, intensity = 1) {
+      node.style.setProperty("--shake-x", `${randomBetween(-18, 18) * intensity}px`);
+      node.style.setProperty("--shake-y", `${randomBetween(-14, 14) * intensity}px`);
+      node.style.setProperty("--spin", `${randomBetween(-42, 42) * intensity}deg`);
+      node.style.setProperty("--dice-scale", String(randomBetween(0.9, 1.14)));
+    }
+
+    function settleDie(node) {
+      node.style.setProperty("--shake-x", "0px");
+      node.style.setProperty("--shake-y", "0px");
+      node.style.setProperty("--spin", "0deg");
+      node.style.setProperty("--dice-scale", "1");
+    }
+
     async function rollDiceAnimation(finalValue, node = rollDie) {
       node.classList.remove("rolling");
       void node.offsetWidth;
       node.classList.add("rolling");
-      for (let i = 0; i < 16; i++) {
-        const value = i === 15 ? finalValue : rollDiceValue();
+      for (let i = 0; i < 22; i++) {
+        const value = i === 21 ? finalValue : rollDiceValue();
+        shakeDie(node, 1 - i / 34);
         node.innerHTML = diceSvg(value);
-        await sleep(58 + i * 9);
+        await sleep(38 + Math.random() * 52 + i * 5);
       }
       node.innerHTML = diceSvg(finalValue);
+      settleDie(node);
       node.classList.remove("rolling");
       state.lastRoll = finalValue;
       updateStateLine();
@@ -1043,10 +1295,7 @@
       pathLines.querySelectorAll(".move-trail").forEach((node) => node.remove());
     }
 
-    function drawMoveTrail(from, to) {
-      if (!from || !to || from === to) return;
-      const start = cellPoint(from);
-      const end = cellPoint(to);
+    function drawTrailBetweenPoints(start, end) {
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute("class", "move-trail");
       path.setAttribute("d", `M ${start.x} ${start.y} L ${end.x} ${end.y}`);
@@ -1058,6 +1307,20 @@
       window.setTimeout(() => path.remove(), 4300);
     }
 
+    function drawMoveTrail(from, to) {
+      if (!from || !to || from === to) return;
+      drawTrailBetweenPoints(cellPoint(from), cellPoint(to));
+    }
+
+    function pulseCell(n) {
+      const cell = document.querySelector(`.cell[data-cell="${n}"]`);
+      if (!cell) return;
+      cell.classList.remove("step-focus");
+      void cell.offsetWidth;
+      cell.classList.add("step-focus");
+      window.setTimeout(() => cell.classList.remove("step-focus"), 560);
+    }
+
     async function animateTo(target) {
       const direction = target >= state.position ? 1 : -1;
       while (state.position !== target) {
@@ -1067,10 +1330,28 @@
         state.position = next;
         token.classList.add("step");
         placeToken();
-        await sleep(300);
+        pulseCell(next);
+        await sleep(540);
         token.classList.remove("step");
-        await sleep(130);
+        await sleep(170);
       }
+    }
+
+    async function animateEntryToBoard() {
+      const gate = { x: 400, y: 960 };
+      const first = cellPoint(1);
+      token.style.opacity = "0";
+      token.style.left = `${(gate.x / 800) * 100}%`;
+      token.style.top = `${(gate.y / 900) * 100}%`;
+      await sleep(120);
+      token.style.opacity = "1";
+      drawTrailBetweenPoints(gate, first);
+      state.position = 1;
+      token.classList.add("step");
+      placeToken();
+      pulseCell(1);
+      await sleep(760);
+      token.classList.remove("step");
     }
 
     function setActiveJump(from, to, active) {
@@ -1159,8 +1440,7 @@
       if (!state.entered) {
         if (roll === 6) {
           state.entered = true;
-          state.position = 1;
-          placeToken();
+          await animateEntryToBoard();
           await sleep(900);
         }
         await sleep(900);
@@ -1272,7 +1552,7 @@
         reply = localMasterReply(text, move);
       }
 
-      addMessage("master", reply);
+      addMessage("master", reply, move);
       updateCellCard(state.position);
       updateStateLine();
       setStage("answer");
