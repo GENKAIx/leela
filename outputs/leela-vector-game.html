@@ -779,22 +779,96 @@
       };
     }
 
-    function symbolSvg(type, color) {
+    function symbolSvg(kind, color) {
       const common = `fill="none" stroke="${color}" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"`;
       const fill = `fill="${color}" opacity="0.14"`;
-      const symbols = [
-        `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="20" ${fill}/><path ${common} d="M32 7v50M7 32h50M16 16l32 32M48 16 16 48"/></svg>`,
-        `<svg viewBox="0 0 64 64"><path ${common} d="M32 7l7 17 18 2-14 12 4 18-15-10-15 10 4-18L7 26l18-2z"/><circle cx="32" cy="32" r="6" fill="${color}"/></svg>`,
-        `<svg viewBox="0 0 64 64"><path ${common} d="M32 8c10 8 16 18 16 28a16 16 0 0 1-32 0c0-10 6-20 16-28z"/><path ${common} d="M24 39c5 4 11 4 16 0"/></svg>`,
-        `<svg viewBox="0 0 64 64"><path ${common} d="M18 34c8-15 20-15 28 0M18 34c8 15 20 15 28 0"/><circle cx="32" cy="32" r="22" ${fill}/><circle cx="32" cy="32" r="5" fill="${color}"/></svg>`,
-        `<svg viewBox="0 0 64 64"><path ${common} d="M32 8v48M18 20h28M14 44h36"/><path ${common} d="M20 20c0 11 5 19 12 24 7-5 12-13 12-24"/></svg>`,
-        `<svg viewBox="0 0 64 64"><path ${common} d="M12 34c10-20 30-20 40 0M12 34c10 20 30 20 40 0M32 14v36"/><circle cx="32" cy="34" r="6" fill="${color}"/></svg>`,
-        `<svg viewBox="0 0 64 64"><rect x="14" y="14" width="36" height="36" rx="2" ${fill}/><path ${common} d="M14 14h36v36H14zM22 22h20v20H22zM32 14v36M14 32h36"/></svg>`,
-        `<svg viewBox="0 0 64 64"><path ${common} d="M32 8c7 12 15 18 24 20-9 2-17 8-24 20-7-12-15-18-24-20 9-2 17-8 24-20z"/><circle cx="32" cy="28" r="5" fill="${color}"/></svg>`,
-        `<svg viewBox="0 0 64 64"><path ${common} d="M12 46c9-22 31-33 40-28-3 24-21 36-40 28zM24 41c6-8 13-14 23-19"/></svg>`,
-        `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" ${fill}/><path ${common} d="M32 10c9 8 14 15 14 22S40 46 32 54C24 46 18 39 18 32s5-14 14-22zM20 32h24"/></svg>`
-      ];
-      return symbols[type % symbols.length];
+      const symbols = {
+        birth: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="21" ${fill}/><path ${common} d="M32 11c-8 7-12 14-12 22 0 9 5 16 12 20 7-4 12-11 12-20 0-8-4-15-12-22zM23 34h18M32 20v30"/></svg>`,
+        illusion: `<svg viewBox="0 0 64 64"><path ${common} d="M12 34c9-15 31-15 40 0-9 15-31 15-40 0z"/><path ${common} d="M22 25c8 7 13 13 20 25"/><circle cx="32" cy="34" r="6" fill="${color}"/></svg>`,
+        fire: `<svg viewBox="0 0 64 64"><path ${common} d="M34 8c10 12 11 20 5 28 2-9-5-13-5-20-13 10-18 22-9 34 8 9 24 4 26-9 2-12-8-22-17-33z"/><path d="M31 33c-5 5-6 10-2 14 5 4 12 0 12-6 0-4-4-7-10-8z" fill="${color}" opacity="0.28"/></svg>`,
+        greed: `<svg viewBox="0 0 64 64"><circle cx="32" cy="35" r="16" ${fill}/><path ${common} d="M19 24h26l5 11-18 18-18-18zM25 24l7-10 7 10M24 36h16M32 28v20"/></svg>`,
+        body: `<svg viewBox="0 0 64 64"><path ${common} d="M32 9v46M19 19h26M17 45h30"/><circle cx="32" cy="18" r="6" fill="${color}" opacity="0.28"/><path ${common} d="M23 26c0 11 4 19 9 25 5-6 9-14 9-25"/></svg>`,
+        cloud: `<svg viewBox="0 0 64 64"><path ${common} d="M18 42h29a10 10 0 0 0-2-20 15 15 0 0 0-28 5 8 8 0 0 0 1 15zM23 20l-6-6M43 20l5-7M32 17V8"/></svg>`,
+        crown: `<svg viewBox="0 0 64 64"><path ${common} d="M13 44h38M17 44l4-25 11 13 11-13 4 25M20 51h24"/><circle cx="21" cy="19" r="3" fill="${color}"/><circle cx="43" cy="19" r="3" fill="${color}"/><circle cx="32" cy="32" r="3" fill="${color}"/></svg>`,
+        senses: `<svg viewBox="0 0 64 64"><path ${common} d="M12 34c10-18 30-18 40 0-10 18-30 18-40 0z"/><circle cx="32" cy="34" r="8" ${fill}/><path ${common} d="M32 15v8M17 21l6 6M47 21l-6 6"/></svg>`,
+        purity: `<svg viewBox="0 0 64 64"><path ${common} d="M32 9c9 9 15 18 15 29a15 15 0 0 1-30 0c0-11 6-20 15-29zM24 41c5 4 11 4 16 0"/></svg>`,
+        joy: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" ${fill}/><path ${common} d="M20 29h.1M44 29h.1M21 39c6 8 16 8 22 0M32 8v8M32 48v8M8 32h8M48 32h8"/></svg>`,
+        envy: `<svg viewBox="0 0 64 64"><path ${common} d="M18 38c6-14 22-14 28 0M18 38c6 12 22 12 28 0"/><path ${common} d="M13 22c9 1 16 5 19 14 3-9 10-13 19-14"/><circle cx="32" cy="38" r="5" fill="${color}"/></svg>`,
+        compassion: `<svg viewBox="0 0 64 64"><path ${common} d="M32 52S14 41 14 27c0-8 10-13 18-3 8-10 18-5 18 3 0 14-18 25-18 25z"/><path ${common} d="M22 35h20M32 25v20"/></svg>`,
+        karma: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="20" ${fill}/><path ${common} d="M21 21c9-8 24-2 25 10M43 43c-9 8-24 2-25-10M46 20v11H35M18 44V33h11"/></svg>`,
+        charity: `<svg viewBox="0 0 64 64"><path ${common} d="M18 35h28M18 35c-5-7 2-14 9-8l5 5 5-5c7-6 14 1 9 8L32 52zM32 32v20"/></svg>`,
+        dharma: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" ${fill}/><path ${common} d="M32 10v44M10 32h44M17 17l30 30M47 17 17 47"/><circle cx="32" cy="32" r="6" fill="${color}"/></svg>`,
+        company: `<svg viewBox="0 0 64 64"><circle cx="23" cy="24" r="7" ${fill}/><circle cx="42" cy="24" r="7" ${fill}/><path ${common} d="M12 51c2-11 7-17 13-17s11 6 13 17M28 51c2-11 7-17 13-17s11 6 13 17"/></svg>`,
+        sorrow: `<svg viewBox="0 0 64 64"><path ${common} d="M32 8c9 10 15 20 15 31a15 15 0 0 1-30 0c0-11 6-21 15-31z"/><path ${common} d="M24 40c5-4 11-4 16 0"/></svg>`,
+        service: `<svg viewBox="0 0 64 64"><path ${common} d="M14 37c8-4 13-4 18 0 5-4 10-4 18 0M18 39l14 13 14-13M32 12v25M22 22h20"/></svg>`,
+        faith: `<svg viewBox="0 0 64 64"><path ${common} d="M32 8v48M20 21h24M16 45h32"/><path ${common} d="M21 33c8 5 14 5 22 0"/></svg>`,
+        wisdom: `<svg viewBox="0 0 64 64"><path ${common} d="M18 14h28v36H18zM23 20h18M23 29h18M23 38h12"/><path ${common} d="M46 14l6 6v36H24"/></svg>`,
+        balance: `<svg viewBox="0 0 64 64"><path ${common} d="M32 10v44M16 22h32M20 22l-9 17h18zM44 22l-9 17h18zM21 54h22"/></svg>`,
+        scent: `<svg viewBox="0 0 64 64"><path ${common} d="M26 49c-7-8-5-17 6-27 11 10 13 19 6 27M22 22c-5-3-6-8-2-13M34 18c-5-4-5-9 0-14M46 22c5-3 6-8 2-13"/></svg>`,
+        taste: `<svg viewBox="0 0 64 64"><path ${common} d="M18 19h28v14c0 9-6 17-14 17s-14-8-14-17zM21 33h22M25 50h14"/></svg>`,
+        breath: `<svg viewBox="0 0 64 64"><path ${common} d="M12 30c9-11 23-11 32 0 5 6 2 15-6 15-6 0-9-5-6-10M17 45c7 7 19 7 30 0M43 20c4-6 9-6 13 0"/></svg>`,
+        human: `<svg viewBox="0 0 64 64"><circle cx="32" cy="17" r="7" ${fill}/><path ${common} d="M32 24v24M20 32h24M23 56l9-8 9 8"/></svg>`,
+        ignorance: `<svg viewBox="0 0 64 64"><path ${common} d="M18 20c7-9 21-9 28 0 6 8 2 17-8 20M32 47v.1"/><path ${common} d="M15 49l34-34"/></svg>`,
+        knowledge: `<svg viewBox="0 0 64 64"><path ${common} d="M13 34c10-16 28-16 38 0-10 16-28 16-38 0z"/><circle cx="32" cy="34" r="8" ${fill}/><path ${common} d="M32 10v9M32 49v5"/></svg>`,
+        neutral: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="21" ${fill}/><path ${common} d="M21 32h22M32 11v42"/></svg>`,
+        sun: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="11" ${fill}/><path ${common} d="M32 6v10M32 48v10M6 32h10M48 32h10M13 13l7 7M44 44l7 7M51 13l-7 7M20 44l-7 7"/></svg>`,
+        moon: `<svg viewBox="0 0 64 64"><path ${common} d="M43 9c-15 4-23 18-18 32 3 9 12 15 22 14-7 4-17 4-25-1C10 46 7 30 15 18 21 9 33 5 43 9z"/></svg>`,
+        earth: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" ${fill}/><path ${common} d="M12 33h40M32 10c8 8 10 35 0 44M32 10c-8 8-10 35 0 44M18 20c9 5 19 5 28 0M18 44c9-5 19-5 28 0"/></svg>`,
+        water: `<svg viewBox="0 0 64 64"><path ${common} d="M32 8c9 10 16 20 16 31a16 16 0 0 1-32 0c0-11 7-21 16-31zM19 42c7 5 19 5 26 0"/></svg>`,
+        sound: `<svg viewBox="0 0 64 64"><path ${common} d="M17 39h9l14 10V15L26 25h-9zM46 25c4 4 4 10 0 14M52 19c8 8 8 18 0 26"/></svg>`,
+        air: `<svg viewBox="0 0 64 64"><path ${common} d="M10 25h30c8 0 8-11 0-11-4 0-6 2-7 5M12 39h36c9 0 9 12 0 12-5 0-8-3-9-7M18 32h28"/></svg>`,
+        light: `<svg viewBox="0 0 64 64"><path ${common} d="M32 8c7 12 15 18 24 20-9 2-17 8-24 20-7-12-15-18-24-20 9-2 17-8 24-20z"/><circle cx="32" cy="28" r="5" fill="${color}"/></svg>`,
+        reality: `<svg viewBox="0 0 64 64"><rect x="15" y="15" width="34" height="34" rx="2" ${fill}/><path ${common} d="M15 15h34v34H15zM23 23h18v18H23zM32 15v34M15 32h34"/></svg>`,
+        intellect: `<svg viewBox="0 0 64 64"><path ${common} d="M20 45c-5-6-6-16 0-24 7-9 20-9 27 0 6 8 5 18-1 24M24 45h20M26 53h16M32 13v8M19 17l5 5M45 17l-5 5"/></svg>`,
+        tamas: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="21" ${fill}/><path ${common} d="M18 42c9-14 19-14 28 0M22 24h.1M42 24h.1"/></svg>`,
+        bliss: `<svg viewBox="0 0 64 64"><path ${common} d="M32 9c7 10 13 16 23 19-10 3-16 9-23 19-7-10-13-16-23-19 10-3 16-9 23-19zM22 48c6 6 14 6 20 0"/><circle cx="32" cy="28" r="5" fill="${color}"/></svg>`,
+        cosmic: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="7" fill="${color}" opacity="0.3"/><path ${common} d="M10 32c8-11 36-11 44 0-8 11-36 11-44 0zM32 10c11 8 11 36 0 44-11-8-11-36 0-44zM17 17l30 30M47 17 17 47"/></svg>`,
+        default: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="20" ${fill}/><path ${common} d="M32 7v50M7 32h50M16 16l32 32M48 16 16 48"/></svg>`
+      };
+      return symbols[kind] || symbols.default;
+    }
+
+    function symbolKindForCell(n) {
+      const name = cellNames[n - 1].toLowerCase();
+      if (name.includes("рождение")) return "birth";
+      if (name.includes("иллюз") || name.includes("заблужд") || name.includes("фантаз")) return "illusion";
+      if (name.includes("гнев") || name.includes("агни")) return "fire";
+      if (name.includes("жад") || name.includes("алч")) return "greed";
+      if (name.includes("физ") || name.includes("тело")) return "body";
+      if (name.includes("тщеслав")) return "crown";
+      if (name.includes("чувств")) return "senses";
+      if (name.includes("очищ") || name.includes("искуп") || name.includes("свято")) return "purity";
+      if (name.includes("развлеч") || name.includes("радость") || name.includes("счаст")) return "joy";
+      if (name.includes("завист") || name.includes("ревност")) return "envy";
+      if (name.includes("сострад")) return "compassion";
+      if (name.includes("карм")) return "karma";
+      if (name.includes("благотвор")) return "charity";
+      if (name.includes("дхар") || name.includes("религ")) return "dharma";
+      if (name.includes("компания") || name.includes("склонност")) return "company";
+      if (name.includes("печаль") || name.includes("ничт")) return "sorrow";
+      if (name.includes("служ")) return "service";
+      if (name.includes("невер") || name.includes("предан")) return "faith";
+      if (name.includes("мудр") || name.includes("знание") || name.includes("различ")) return "wisdom";
+      if (name.includes("равновес") || name.includes("нейтрал")) return "balance";
+      if (name.includes("аромат")) return "scent";
+      if (name.includes("вкус")) return "taste";
+      if (name.includes("прана") || name.includes("апана") || name.includes("вьяна")) return "breath";
+      if (name.includes("челов")) return "human";
+      if (name.includes("невед")) return "ignorance";
+      if (name.includes("солнеч")) return "sun";
+      if (name.includes("лун")) return "moon";
+      if (name.includes("земл")) return "earth";
+      if (name.includes("жидк")) return "water";
+      if (name.includes("звук")) return "sound";
+      if (name.includes("газ")) return "air";
+      if (name.includes("сиян")) return "light";
+      if (name.includes("реальн") || name.includes("абсолют")) return "reality";
+      if (name.includes("интеллект")) return "intellect";
+      if (name.includes("тамас") || name.includes("насили") || name.includes("эго")) return "tamas";
+      if (name.includes("блаж")) return "bliss";
+      if (name.includes("косми") || name.includes("простран") || name.includes("пракрити") || name.includes("саттва") || name.includes("раджас")) return "cosmic";
+      if (name.includes("небес") || name.includes("астраль")) return "cloud";
+      return "default";
     }
 
     function diceSvg(value) {
@@ -844,9 +918,10 @@
           if (jumps[n]) cell.classList.add("transfer-cell");
           cell.dataset.cell = String(n);
           const color = colors[n % colors.length];
+          const symbolKind = symbolKindForCell(n);
           cell.innerHTML = `
             <span class="cell-number">${n}${jumps[n] ? "*" : ""}</span>
-            ${symbolSvg(n, color)}
+            ${symbolSvg(symbolKind, color)}
             <span class="cell-name">${cellNames[n - 1]}</span>
           `;
           cell.addEventListener("click", () => showCellCard(n, "Просмотр"));
