@@ -1285,6 +1285,13 @@
       return Math.floor(Math.random() * 6) + 1;
     }
 
+    function isEntryReady(text) {
+      const normalized = text.toLowerCase();
+      const hasIntention = /(намерени|запрос|хочу|увид|поня|разобра|осозна|провер)/i.test(normalized);
+      const hasReadiness = /(готов|подтверж|соглас|без мас|смотреть|факт)/i.test(normalized);
+      return hasIntention && hasReadiness;
+    }
+
     function randomBetween(min, max) {
       return min + Math.random() * (max - min);
     }
@@ -1543,8 +1550,39 @@
       userInput.disabled = true;
 
       if (state.phase === "awaiting_intention") {
+        setStage("thinking");
+        await sleep(1400);
+
+        if (!isEntryReady(text)) {
+          let reply;
+          try {
+            reply = await askGpt(text, {
+              noRoll: true,
+              reason: "awaiting_intention",
+              position: state.position,
+              cell: cellNames[state.position - 1]
+            });
+          } catch {
+            reply = localMasterReply(text, { noRoll: true });
+          }
+
+          addMessage("master", reply);
+          updateCellCard(0);
+          updateStateLine();
+          setStage("answer");
+
+          state.busy = false;
+          sendButton.disabled = false;
+          userInput.disabled = false;
+          userInput.focus();
+          return;
+        }
+
         state.intention = text;
         state.phase = "playing";
+      } else {
+        setStage("thinking");
+        await sleep(900);
       }
 
       const enteredBefore = state.entered;
