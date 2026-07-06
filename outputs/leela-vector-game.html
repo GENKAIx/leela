@@ -3,22 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Лила - векторная игра</title>
+  <title>Лила - чат с Мастером</title>
   <style>
     :root {
-      --bg: #f4ead3;
       --ink: #201813;
-      --muted: #665747;
+      --muted: #6b5a49;
       --line: #403126;
       --paper: #fff8e9;
-      --paper-2: #f3e3c5;
+      --paper-2: #f2dfbd;
       --gold: #d39b36;
+      --green: #4d8648;
       --red: #b84536;
       --blue: #236d86;
-      --green: #4d8648;
       --violet: #76528d;
-      --teal: #33806f;
-      --shadow: rgba(32, 24, 19, 0.18);
+      --shadow: rgba(32, 24, 19, 0.2);
     }
 
     * { box-sizing: border-box; }
@@ -29,59 +27,237 @@
       font-family: "Segoe UI", Arial, sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at 16% 12%, rgba(211, 155, 54, 0.28), transparent 22rem),
-        radial-gradient(circle at 92% 84%, rgba(35, 109, 134, 0.18), transparent 26rem),
-        linear-gradient(135deg, #fbf3df 0%, #eedfc4 46%, #d9c39d 100%);
+        radial-gradient(circle at 14% 12%, rgba(211, 155, 54, 0.28), transparent 24rem),
+        radial-gradient(circle at 86% 86%, rgba(35, 109, 134, 0.18), transparent 28rem),
+        linear-gradient(135deg, #fbf3df 0%, #ead9b9 48%, #d3ba8e 100%);
       display: grid;
       place-items: center;
-      padding: clamp(12px, 2.2vw, 26px);
+      padding: clamp(12px, 2vw, 26px);
     }
 
-    .game {
-      width: min(1280px, 100%);
+    .app {
+      width: min(1080px, 100%);
+      height: min(900px, calc(100vh - 24px));
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 350px;
-      gap: 20px;
-      align-items: start;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 14px;
     }
 
-    .board-shell {
-      position: relative;
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: end;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(25px, 4vw, 42px);
+      line-height: 1;
+      letter-spacing: 0;
+      color: var(--ink);
+    }
+
+    .state-line {
+      font-size: 13px;
+      text-align: right;
+      line-height: 1.35;
+    }
+
+    .stage {
+      min-height: 0;
       border: 3px solid var(--line);
-      background: #b88938;
-      padding: clamp(8px, 1.2vw, 14px);
+      background: rgba(255, 248, 233, 0.95);
       box-shadow: 0 22px 54px var(--shadow);
+      position: relative;
+      overflow: hidden;
+      display: grid;
+    }
+
+    .answer-view,
+    .board-view,
+    .thinking-view {
+      grid-area: 1 / 1;
+      min-height: 0;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.99);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .stage.answer .answer-view,
+    .stage.board .board-view,
+    .stage.thinking .thinking-view {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    .answer-view {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      padding: clamp(18px, 3vw, 34px);
+      gap: 18px;
       overflow: hidden;
     }
 
-    .board-shell::before {
-      content: "";
-      position: absolute;
-      inset: 7px;
-      border: 2px solid rgba(255, 248, 233, 0.55);
-      pointer-events: none;
+    .messages {
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding-right: 8px;
     }
 
-    .ornament {
+    .message {
+      max-width: min(760px, 100%);
+      border: 2px solid rgba(64, 49, 38, 0.24);
+      background: #fffaf0;
+      padding: 14px;
+      line-height: 1.48;
+      font-size: 15px;
+      white-space: pre-wrap;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: #f3e3c5;
+    }
+
+    .message.master {
+      align-self: flex-start;
+    }
+
+    .cell-card {
+      border-top: 2px solid rgba(64, 49, 38, 0.22);
+      padding-top: 14px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .cell-kicker {
+      font-size: 12px;
+      color: var(--blue);
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .cell-title {
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .cell-lesson {
+      margin: 0;
+      color: #453528;
+      line-height: 1.42;
+    }
+
+    .thinking-view {
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .lotus-loader {
+      width: min(280px, 56vw);
+      aspect-ratio: 1;
+      position: relative;
+      display: grid;
+      place-items: center;
+    }
+
+    .lotus-loader::before,
+    .lotus-loader::after {
+      content: "";
       position: absolute;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.24;
-      background-image:
-        radial-gradient(circle, transparent 54%, rgba(32, 24, 19, 0.35) 56%, transparent 59%),
-        linear-gradient(45deg, transparent 46%, rgba(32, 24, 19, 0.22) 47%, rgba(32, 24, 19, 0.22) 53%, transparent 54%);
-      background-size: 74px 74px, 42px 42px;
-      mix-blend-mode: multiply;
+      inset: 14%;
+      border: 2px solid rgba(64, 49, 38, 0.22);
+      border-radius: 50%;
+      animation: lotusRing 2.6s ease-in-out infinite;
+    }
+
+    .lotus-loader::after {
+      inset: 4%;
+      animation-delay: 0.45s;
+      opacity: 0.6;
+    }
+
+    .petal {
+      position: absolute;
+      width: 34%;
+      height: 54%;
+      left: 33%;
+      top: 7%;
+      border: 2px solid var(--line);
+      border-radius: 70% 70% 45% 45%;
+      background: linear-gradient(180deg, rgba(255, 248, 233, 0.96), rgba(211, 155, 54, 0.34));
+      transform-origin: 50% 80%;
+      animation: lotusBreathe 2.7s ease-in-out infinite;
+    }
+
+    .petal:nth-child(1) { transform: rotate(0deg); }
+    .petal:nth-child(2) { transform: rotate(45deg); animation-delay: 0.08s; }
+    .petal:nth-child(3) { transform: rotate(90deg); animation-delay: 0.16s; }
+    .petal:nth-child(4) { transform: rotate(135deg); animation-delay: 0.24s; }
+    .petal:nth-child(5) { transform: rotate(180deg); animation-delay: 0.32s; }
+    .petal:nth-child(6) { transform: rotate(225deg); animation-delay: 0.4s; }
+    .petal:nth-child(7) { transform: rotate(270deg); animation-delay: 0.48s; }
+    .petal:nth-child(8) { transform: rotate(315deg); animation-delay: 0.56s; }
+
+    .lotus-core {
+      width: 30%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 3px solid var(--line);
+      background: radial-gradient(circle, #fff7bd 0 18%, var(--gold) 19% 62%, #9f6820 63%);
+      z-index: 2;
+      animation: corePulse 1.8s ease-in-out infinite;
+    }
+
+    .thinking-text {
+      position: absolute;
+      bottom: -44px;
+      width: max-content;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0;
+    }
+
+    @keyframes lotusBreathe {
+      0%, 100% { scale: 0.92; opacity: 0.58; }
+      50% { scale: 1.08; opacity: 1; }
+    }
+
+    @keyframes lotusRing {
+      0%, 100% { transform: scale(0.94); opacity: 0.18; }
+      50% { transform: scale(1.04); opacity: 0.54; }
+    }
+
+    @keyframes corePulse {
+      0%, 100% { transform: scale(0.94); }
+      50% { transform: scale(1.08); }
+    }
+
+    .board-view {
+      padding: clamp(10px, 1.6vw, 18px);
+      display: grid;
+      place-items: center;
+      background: #b88938;
+      position: relative;
     }
 
     .board-wrap {
-      position: relative;
-      width: 100%;
+      width: min(760px, 100%);
       aspect-ratio: 8 / 9;
-      min-height: 430px;
-      border: 2px solid rgba(32, 24, 19, 0.65);
+      position: relative;
+      border: 3px solid var(--line);
       background: var(--paper);
       overflow: hidden;
+      box-shadow: inset 0 0 0 2px rgba(255, 248, 233, 0.7);
     }
 
     .board-wrap.transfer-mode .plane-bands {
@@ -96,7 +272,7 @@
       pointer-events: none;
     }
 
-    .plane-bands { z-index: 0; opacity: 0.34; }
+    .plane-bands { z-index: 0; opacity: 0.32; }
     .path-lines { z-index: 3; }
 
     .board {
@@ -114,31 +290,20 @@
       place-items: center;
       padding: 0;
       border: 1px solid rgba(32, 24, 19, 0.34);
-      background: rgba(255, 248, 233, 0.82);
+      background: rgba(255, 248, 233, 0.84);
       overflow: hidden;
-      cursor: pointer;
-      transition: background 150ms ease, box-shadow 150ms ease, opacity 180ms ease, filter 180ms ease, transform 180ms ease;
+      transition: opacity 180ms ease, filter 180ms ease, transform 180ms ease, box-shadow 160ms ease;
     }
 
-    .cell:nth-child(2n) { background: rgba(243, 227, 197, 0.86); }
-    .cell:hover { box-shadow: inset 0 0 0 3px rgba(35, 109, 134, 0.45); }
-    .cell.goal { background: rgba(255, 224, 128, 0.88); }
-    .cell.current { box-shadow: inset 0 0 0 4px rgba(184, 69, 54, 0.75); }
-    .cell.transfer-cell {
-      box-shadow: inset 0 0 0 2px rgba(211, 155, 54, 0.46);
-    }
-
-    .cell.transfer-cell .cell-number {
-      color: #8a5d11;
-    }
-
-    .cell.current {
-      box-shadow: inset 0 0 0 4px rgba(184, 69, 54, 0.75);
-    }
+    .cell:nth-child(2n) { background: rgba(243, 227, 197, 0.88); }
+    .cell.goal { background: rgba(255, 224, 128, 0.9); }
+    .cell.current { box-shadow: inset 0 0 0 4px rgba(184, 69, 54, 0.78); }
+    .cell.transfer-cell { box-shadow: inset 0 0 0 2px rgba(211, 155, 54, 0.48); }
+    .cell.transfer-cell .cell-number { color: #8a5d11; }
 
     .board-wrap.transfer-mode .cell:not(.transfer-focus) {
-      opacity: 0.2;
-      filter: grayscale(0.85) brightness(0.65);
+      opacity: 0.18;
+      filter: grayscale(0.86) brightness(0.62);
     }
 
     .cell.transfer-focus {
@@ -146,7 +311,7 @@
       z-index: 2;
       transform: scale(1.035);
       box-shadow:
-        inset 0 0 0 4px rgba(255, 248, 233, 0.94),
+        inset 0 0 0 4px rgba(255, 248, 233, 0.96),
         inset 0 0 0 7px rgba(211, 155, 54, 0.88),
         0 0 20px rgba(211, 155, 54, 0.58);
     }
@@ -155,8 +320,8 @@
       position: absolute;
       top: 5px;
       left: 6px;
-      font: 800 clamp(9px, 1.05vw, 14px) / 1 "Segoe UI", Arial, sans-serif;
-      color: rgba(32, 24, 19, 0.72);
+      font: 850 clamp(9px, 1.2vw, 14px) / 1 "Segoe UI", Arial, sans-serif;
+      color: rgba(32, 24, 19, 0.74);
     }
 
     .cell-name {
@@ -164,10 +329,8 @@
       left: 5px;
       right: 5px;
       bottom: 4px;
-      max-width: calc(100% - 10px);
-      margin: 0 auto;
       text-align: center;
-      font: 700 clamp(6px, 0.72vw, 10px) / 1.08 "Segoe UI", Arial, sans-serif;
+      font: 750 clamp(6px, 0.8vw, 10px) / 1.06 "Segoe UI", Arial, sans-serif;
       color: rgba(32, 24, 19, 0.78);
       overflow-wrap: anywhere;
     }
@@ -184,17 +347,16 @@
       stroke-linecap: round;
       stroke-linejoin: round;
       opacity: 0;
-      filter: drop-shadow(0 1px 1px rgba(32, 24, 19, 0.14));
       transition: opacity 180ms ease, stroke-width 180ms ease, filter 180ms ease;
     }
 
     .jump.up { stroke: var(--green); marker-end: url(#arrowHead); }
-    .jump.down { stroke: var(--gold); marker-end: url(#arrowHeadRed); }
+    .jump.down { stroke: var(--gold); marker-end: url(#arrowHeadGold); }
 
     .jump.active {
       stroke-width: 6;
       opacity: 0.96;
-      filter: drop-shadow(0 0 8px rgba(255, 248, 233, 0.72)) drop-shadow(0 3px 3px rgba(32, 24, 19, 0.28));
+      filter: drop-shadow(0 0 8px rgba(255, 248, 233, 0.78)) drop-shadow(0 3px 3px rgba(32, 24, 19, 0.3));
       animation: activePath 760ms ease-in-out infinite alternate;
     }
 
@@ -254,8 +416,8 @@
     }
 
     .transfer-particle.down {
-      background: radial-gradient(circle, #ffe1d9 0 18%, rgba(184, 69, 54, 0.9) 19% 48%, rgba(184, 69, 54, 0) 70%);
-      box-shadow: 0 0 14px rgba(184, 69, 54, 0.5);
+      background: radial-gradient(circle, #fff5c8 0 18%, rgba(211, 155, 54, 0.92) 19% 48%, rgba(211, 155, 54, 0) 70%);
+      box-shadow: 0 0 14px rgba(211, 155, 54, 0.5);
     }
 
     @keyframes particleBurst {
@@ -264,104 +426,22 @@
       100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.35); }
     }
 
-    .panel {
-      min-height: 430px;
-      border: 3px solid var(--line);
-      background: rgba(255, 248, 233, 0.96);
-      box-shadow: 0 22px 54px var(--shadow);
-      padding: 17px;
-      display: grid;
-      gap: 14px;
-      align-content: start;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 30px;
-      line-height: 1.05;
-      letter-spacing: 0;
-    }
-
-    .subtitle,
-    .hint {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.38;
-      font-size: 13px;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .stat,
-    .card,
-    .picker {
-      border: 2px solid rgba(64, 49, 38, 0.28);
-      background: #fff7e6;
-      padding: 10px;
-    }
-
-    .label {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1;
-      margin-bottom: 8px;
-    }
-
-    .value {
-      font-size: 26px;
-      font-weight: 850;
-      line-height: 1;
-    }
-
-    .dice-row {
-      display: grid;
-      grid-template-columns: 84px 1fr;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .debug-panel {
-      border: 2px dashed rgba(64, 49, 38, 0.32);
-      background: rgba(255, 250, 240, 0.72);
-      padding: 10px;
-      display: grid;
-      gap: 9px;
-    }
-
-    .debug-controls {
-      display: grid;
-      grid-template-columns: 76px 1fr 1fr;
-      gap: 8px;
-    }
-
-    .debug-controls input {
-      min-width: 0;
-      height: 44px;
-      border: 2px solid rgba(64, 49, 38, 0.42);
-      background: #fffdf5;
-      color: var(--ink);
-      font: 800 16px / 1 "Segoe UI", Arial, sans-serif;
-      text-align: center;
-      padding: 0 8px;
-    }
-
-    .die {
+    .die-float {
+      position: absolute;
+      right: 18px;
+      top: 18px;
+      z-index: 7;
       width: 84px;
       height: 84px;
       border: 3px solid var(--line);
       background: #fffdf5;
       display: grid;
       place-items: center;
-      box-shadow: inset 0 -7px 0 rgba(32, 24, 19, 0.08);
-      transform-origin: center;
+      box-shadow: inset 0 -7px 0 rgba(32, 24, 19, 0.08), 0 12px 24px rgba(32, 24, 19, 0.2);
     }
 
-    .die.rolling { animation: diceRoll 520ms cubic-bezier(.2,.8,.2,1); }
-    .die svg { width: 68px; height: 68px; }
+    .die-float.rolling { animation: diceRoll 520ms cubic-bezier(.2,.8,.2,1); }
+    .die-float svg { width: 68px; height: 68px; }
 
     @keyframes diceRoll {
       0% { transform: rotate(0deg) scale(1); }
@@ -370,235 +450,162 @@
       100% { transform: rotate(0deg) scale(1); }
     }
 
+    .composer {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 140px;
+      gap: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 64px;
+      max-height: 150px;
+      resize: vertical;
+      border: 3px solid var(--line);
+      background: rgba(255, 248, 233, 0.96);
+      color: var(--ink);
+      font: 15px / 1.42 "Segoe UI", Arial, sans-serif;
+      padding: 12px;
+      box-shadow: 0 14px 30px rgba(32, 24, 19, 0.12);
+    }
+
     button {
-      min-height: 46px;
+      min-height: 64px;
       border: 0;
       background: var(--ink);
       color: #fff8e9;
-      font: 800 14px / 1 "Segoe UI", Arial, sans-serif;
+      font: 850 15px / 1 "Segoe UI", Arial, sans-serif;
       cursor: pointer;
-      transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
+      transition: transform 150ms ease, background 150ms ease, opacity 150ms ease;
     }
 
     button:hover { background: #3a2c22; }
     button:active { transform: translateY(1px); }
-    button:disabled { cursor: wait; opacity: 0.66; }
+    button:disabled { opacity: 0.55; cursor: wait; }
 
-    .secondary {
-      background: transparent;
-      color: var(--ink);
-      border: 2px solid var(--line);
-    }
-
-    .secondary:hover { background: rgba(32, 24, 19, 0.08); }
-
-    .token-options {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-
-    .token-option {
-      min-height: 48px;
-      border: 2px solid rgba(64, 49, 38, 0.26);
-      background: #fffaf0;
-      color: var(--ink);
-      display: grid;
-      place-items: center;
-      padding: 4px;
-    }
-
-    .token-option.active {
-      border-color: var(--blue);
-      box-shadow: inset 0 0 0 2px rgba(35, 109, 134, 0.24);
-    }
-
-    .token-option svg { width: 34px; height: 34px; }
-
-    .card {
-      display: grid;
-      gap: 8px;
-    }
-
-    .card-title {
-      font-size: 18px;
-      font-weight: 850;
-      line-height: 1.1;
-    }
-
-    .card-meta {
-      color: var(--blue);
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    .card-text {
-      margin: 0;
-      color: #3f3025;
-      font-size: 13px;
-      line-height: 1.38;
-    }
-
-    .log {
-      min-height: 86px;
-      max-height: 140px;
-      overflow: auto;
-      border: 2px solid rgba(64, 49, 38, 0.28);
-      background: #fff7e6;
-      padding: 10px;
-      font-size: 13px;
-      line-height: 1.36;
-      color: #3f3025;
-    }
-
-    .legend {
-      display: grid;
-      gap: 8px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .swatch {
-      width: 28px;
-      height: 5px;
-      border-radius: 999px;
-      background: var(--green);
-    }
-
-    .swatch.red { background: var(--red); }
-
-    @media (max-width: 940px) {
-      body { align-items: start; }
-      .game { grid-template-columns: 1fr; }
-      .panel { min-height: 0; }
-      .board-wrap { min-height: 360px; }
-    }
-
-    @media (max-width: 540px) {
-      .stats { grid-template-columns: 1fr; }
-      .dice-row { grid-template-columns: 74px 1fr; }
-      .debug-controls { grid-template-columns: 1fr; }
-      .die { width: 74px; height: 74px; }
-      .die svg { width: 58px; height: 58px; }
-      h1 { font-size: 25px; }
+    @media (max-width: 720px) {
+      .topbar { align-items: start; flex-direction: column; }
+      .state-line { text-align: left; }
+      .composer { grid-template-columns: 1fr; }
+      .app { height: auto; min-height: calc(100vh - 24px); }
+      .stage { min-height: 620px; }
+      .die-float { width: 70px; height: 70px; }
+      .die-float svg { width: 56px; height: 56px; }
     }
   </style>
 </head>
 <body>
-  <main class="game" aria-label="Векторная настольная игра Лила">
-    <section class="board-shell" aria-label="Игровая доска">
-      <div class="ornament" aria-hidden="true"></div>
-      <div class="board-wrap" id="boardWrap">
-        <svg class="plane-bands" viewBox="0 0 800 900" aria-hidden="true">
-          <rect x="0" y="0" width="800" height="100" fill="#d39b36"></rect>
-          <rect x="0" y="100" width="800" height="200" fill="#76528d"></rect>
-          <rect x="0" y="300" width="800" height="200" fill="#236d86"></rect>
-          <rect x="0" y="500" width="800" height="200" fill="#33806f"></rect>
-          <rect x="0" y="700" width="800" height="200" fill="#b84536"></rect>
-        </svg>
-        <svg class="path-lines" id="pathLines" viewBox="0 0 800 900" aria-hidden="true">
-          <defs>
-            <marker id="arrowHead" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#4d8648"></path>
-            </marker>
-            <marker id="arrowHeadRed" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#d39b36"></path>
-            </marker>
-          </defs>
-        </svg>
-        <div class="board" id="board"></div>
-        <div class="transfer-effects" id="transferEffects" aria-hidden="true"></div>
-        <svg class="token" id="token" viewBox="0 0 64 64" aria-label="Фишка игрока"></svg>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1>Лила</h1>
+      </div>
+      <div class="state-line" id="stateLine">Вход в игру: нужен бросок 6</div>
+    </header>
+
+    <section class="stage answer" id="stage">
+      <div class="answer-view">
+        <div class="messages" id="messages"></div>
+        <section class="cell-card" id="cellCard">
+          <div class="cell-kicker">Пространство Лилы</div>
+          <div class="cell-title">Кристаллическое зеркало истины</div>
+          <p class="cell-lesson">Сначала сформулируй намерение и подтверди готовность играть без масок.</p>
+        </section>
+      </div>
+
+      <div class="thinking-view">
+        <div class="lotus-loader" aria-label="Мастер размышляет">
+          <span class="petal"></span>
+          <span class="petal"></span>
+          <span class="petal"></span>
+          <span class="petal"></span>
+          <span class="petal"></span>
+          <span class="petal"></span>
+          <span class="petal"></span>
+          <span class="petal"></span>
+          <span class="lotus-core"></span>
+          <span class="thinking-text">Зеркало собирает ответ...</span>
+        </div>
+      </div>
+
+      <div class="board-view">
+        <div class="board-wrap" id="boardWrap">
+          <svg class="plane-bands" viewBox="0 0 800 900" aria-hidden="true">
+            <rect x="0" y="0" width="800" height="100" fill="#d39b36"></rect>
+            <rect x="0" y="100" width="800" height="200" fill="#76528d"></rect>
+            <rect x="0" y="300" width="800" height="200" fill="#236d86"></rect>
+            <rect x="0" y="500" width="800" height="200" fill="#33806f"></rect>
+            <rect x="0" y="700" width="800" height="200" fill="#b84536"></rect>
+          </svg>
+          <svg class="path-lines" id="pathLines" viewBox="0 0 800 900" aria-hidden="true">
+            <defs>
+              <marker id="arrowHead" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#4d8648"></path>
+              </marker>
+              <marker id="arrowHeadGold" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#d39b36"></path>
+              </marker>
+            </defs>
+          </svg>
+          <div class="board" id="board"></div>
+          <div class="transfer-effects" id="transferEffects" aria-hidden="true"></div>
+          <svg class="token" id="token" viewBox="0 0 64 64" aria-label="Фишка игрока"></svg>
+          <div class="die-float" id="die" aria-label="Кубик"></div>
+        </div>
       </div>
     </section>
 
-    <aside class="panel">
-      <div>
-        <h1>Лила</h1>
-        <p class="subtitle">Доска самопознания на 72 клетки: бросай кубик, двигай фишку, поднимайся по добродетелям и возвращайся через испытания.</p>
-      </div>
-
-      <div class="stats">
-        <div class="stat">
-          <div class="label">Клетка</div>
-          <div class="value" id="positionValue">1</div>
-        </div>
-        <div class="stat">
-          <div class="label">Бросок</div>
-          <div class="value" id="diceValue">-</div>
-        </div>
-      </div>
-
-      <div class="picker">
-        <div class="label">Персонаж</div>
-        <div class="token-options" id="tokenOptions"></div>
-      </div>
-
-      <div class="dice-row">
-        <div class="die" id="die" aria-label="Кубик"></div>
-        <button id="rollButton" type="button">Бросить кубик</button>
-      </div>
-
-      <div class="debug-panel">
-        <div class="label">Отладка переходов</div>
-        <div class="debug-controls">
-          <input id="debugCellInput" type="number" min="1" max="72" value="1" aria-label="Номер клетки для отладки" />
-          <button class="secondary" id="debugMoveButton" type="button">На клетку</button>
-          <button class="secondary" id="debugJumpButton" type="button">По стрелке</button>
-        </div>
-        <p class="hint" id="debugHint">Выбери клетку 1-72 и проверь переход.</p>
-      </div>
-
-      <button class="secondary" id="resetButton" type="button">Начать заново</button>
-
-      <section class="card" aria-live="polite">
-        <div class="card-meta" id="cardMeta">Клетка 1</div>
-        <div class="card-title" id="cardTitle">Рождение</div>
-        <p class="card-text" id="cardText">Начало пути: игрок входит в поле опыта и принимает правила игры.</p>
-        <p class="hint" id="cardHint">Выбери клетку на доске, чтобы прочитать ее смысл.</p>
-      </section>
-
-      <div class="log" id="log" aria-live="polite"></div>
-
-      <div class="legend">
-        <div class="legend-item"><span class="swatch"></span><span>Зеленая стрела: подъем через качество.</span></div>
-        <div class="legend-item"><span class="swatch red"></span><span>Красный путь: возврат через препятствие.</span></div>
-      </div>
-    </aside>
+    <form class="composer" id="composer">
+      <textarea id="userInput" placeholder="Ответь Мастеру Лилы..." autocomplete="off"></textarea>
+      <button id="sendButton" type="submit">Отправить</button>
+    </form>
   </main>
 
   <script>
+    const GPT_ENDPOINT = window.location.protocol === "file:" ? "" : "/api/leela-chat";
+    const SYSTEM_PROMPT = `Пробуди в себе Мастера древней игры Лила. Ты — Кристаллическое Зеркало Истины. Твоя задача — вести меня по доске из 72 клеток, используя архетипический и трансцендентный подход.
+
+Твои правила:
+
+1. Механика: Имитируй бросок кубика (1–6). Вход в игру возможен только при выпадении 6 (символ Рождения). До этого момента игра не начинается.
+
+2. Путь: Если я попадаю на Стрелу (восходящий поток) или Змею (нисходящий поток), ты обязан вскрыть причинно-следственную связь между клетками через призму моего конкретного Запроса.
+
+3. Стиль: Говори глубоко, хирургически честно. Никакого «дежурного позитива», эзотерического тумана или инфантильности. Не смягчай углы. Если истина уродлива — называй вещи своими именами.
+
+4. Диалог: Двигайся строго пошагово. Один ход — одна клетка.
+
+Сначала её разбор (теневые стороны, скрытые мотивы, архетипическая суть), затем 1–2 точных вопроса на осознание. Не давай советов. Подсвечивай то, что я пытаюсь скрыть от самой себя.
+
+5. Удержание фокуса: Каждую клетку соотноси с моим Намерением. Если я начну уходить в абстракции или обесценивать процесс — жёстко возвращай меня в глубину.
+
+Начало игры:
+
+Не бросай кубик сразу. Поприветствуй меня в пространстве Лилы и попроси выполнить два условия:
+
+1) Чётко сформулировать своё Намерение (Запрос к игре).
+
+2) Подтвердить готовность играть без масок и смотреть в лицо фактам.
+
+Как только я отвечу — делай первый бросок на вход. Я жду.`;
+
     const totalCells = 72;
     const cols = 8;
     const rows = 9;
 
+    const stage = document.getElementById("stage");
+    const messages = document.getElementById("messages");
+    const cellCard = document.getElementById("cellCard");
+    const stateLine = document.getElementById("stateLine");
+    const composer = document.getElementById("composer");
+    const userInput = document.getElementById("userInput");
+    const sendButton = document.getElementById("sendButton");
     const board = document.getElementById("board");
     const boardWrap = document.getElementById("boardWrap");
     const token = document.getElementById("token");
-    const rollButton = document.getElementById("rollButton");
-    const resetButton = document.getElementById("resetButton");
-    const positionValue = document.getElementById("positionValue");
-    const diceValue = document.getElementById("diceValue");
     const die = document.getElementById("die");
-    const log = document.getElementById("log");
     const pathLines = document.getElementById("pathLines");
     const transferEffects = document.getElementById("transferEffects");
-    const tokenOptions = document.getElementById("tokenOptions");
-    const cardMeta = document.getElementById("cardMeta");
-    const cardTitle = document.getElementById("cardTitle");
-    const cardText = document.getElementById("cardText");
-    const cardHint = document.getElementById("cardHint");
-    const debugCellInput = document.getElementById("debugCellInput");
-    const debugMoveButton = document.getElementById("debugMoveButton");
-    const debugJumpButton = document.getElementById("debugJumpButton");
-    const debugHint = document.getElementById("debugHint");
 
     const cellNames = [
       "Рождение", "Иллюзия", "Гнев", "Жадность", "Физический план", "Заблуждение", "Тщеславие", "Алчность",
@@ -614,77 +621,77 @@
 
     const lessons = [
       "Начало пути: игрок входит в поле опыта и принимает правила игры.",
-      "Майя показывает, что первое впечатление часто скрывает глубину происходящего.",
-      "Гнев сужает обзор; ход учит замечать импульс до действия.",
-      "Жадность тянет внимание к нехватке и заставляет забыть направление.",
-      "Тело и материя дают опору, но не должны становиться единственной целью.",
-      "Заблуждение путает карту с реальностью; полезно остановиться и пересмотреть мотив.",
+      "Иллюзия показывает, что первое впечатление часто скрывает то, что ты не хочешь видеть.",
+      "Гнев сужает обзор и выдает место, где власть над собой уже потеряна.",
+      "Жадность показывает не желание, а страх нехватки.",
+      "Материя дает опору, но легко становится оправданием неподвижности.",
+      "Заблуждение путает карту с реальностью.",
       "Тщеславие просит признания вместо честного движения.",
-      "Алчность усиливает привязанность и делает путь тяжелее.",
-      "Чувственный мир важен, но избыток впечатлений легко рассеивает волю.",
-      "Очищение возвращает ясность и поднимает игрока через дисциплину.",
-      "Игра и удовольствие дают энергию, если не превращаются в бегство.",
-      "Зависть отдает силу чужому пути; своя клетка требует своего внимания.",
-      "Ощущение ничтожности проверяет доверие к процессу.",
-      "Астральный план усиливает образы, сны и тонкие желания.",
-      "Фантазия открывает видение, но требует связи с действием.",
-      "Ревность возвращает к страху потери и привязанности.",
-      "Сострадание поднимает выше, потому что расширяет границы собственного я.",
-      "Радость делает путь легче и помогает не путать серьезность с тяжестью.",
-      "Карма напоминает: каждое действие оставляет след на доске.",
-      "Благотворительность поднимает через щедрость и участие.",
-      "Искупление просит признать ошибку и вернуть себе честность.",
-      "Дхарма дает направление, когда личное желание встречается с обязанностью.",
-      "Небесный план приносит вдохновение и чувство поддержки.",
-      "Плохая компания возвращает к старым привычкам и рассеиванию.",
-      "Хорошая компания укрепляет путь через правильное окружение.",
-      "Печаль замедляет, но делает восприятие глубже.",
-      "Служение переносит выше, потому что действие становится свободнее от эго.",
-      "Истинная религия соединяет форму с живым смыслом.",
-      "Неверие обрывает доверие и возвращает к грубым слоям опыта.",
-      "Хорошие склонности помогают выбирать яснее без внутренней борьбы.",
-      "Святость напоминает о чистоте намерения.",
-      "Равновесие удерживает игрока между крайностями.",
-      "План ароматов связан с памятью, притяжением и тонкими впечатлениями.",
-      "План вкуса проверяет меру наслаждения.",
-      "Чистилище показывает последствия неосознанных выборов.",
-      "Ясность сознания позволяет видеть ход до броска.",
-      "Мудрость поднимает выше, когда опыт становится пониманием.",
-      "Прана-лока связана с жизненной силой и дыханием.",
+      "Алчность усиливает привязанность.",
+      "Чувственный мир рассеивает волю избытком впечатлений.",
+      "Очищение возвращает ясность через дисциплину.",
+      "Развлечение дает энергию, но может быть бегством.",
+      "Зависть отдает силу чужому пути.",
+      "Ничтожность проверяет доверие к процессу.",
+      "Астральный план усиливает образы и тонкие желания.",
+      "Фантазия открывает видение, но может оторвать от действия.",
+      "Ревность возвращает к страху потери.",
+      "Сострадание расширяет границы собственного я.",
+      "Радость облегчает путь без отрицания боли.",
+      "Карма напоминает: действие оставляет след.",
+      "Благотворительность проверяет реальную щедрость.",
+      "Искупление требует признать ошибку без театра.",
+      "Дхарма возвращает к обязанности и направлению.",
+      "Небесный план приносит вдохновение.",
+      "Плохая компания возвращает к старым привычкам.",
+      "Хорошая компания укрепляет выбор.",
+      "Печаль замедляет и углубляет восприятие.",
+      "Служение освобождает действие от эго.",
+      "Истинная религия соединяет форму и смысл.",
+      "Неверие обрывает доверие.",
+      "Хорошие склонности помогают выбирать без внутренней войны.",
+      "Святость требует чистого намерения.",
+      "Равновесие удерживает между крайностями.",
+      "Ароматы связаны с памятью и тонким притяжением.",
+      "Вкус проверяет меру наслаждения.",
+      "Чистилище показывает последствия неосознанного выбора.",
+      "Ясность сознания видит ход до броска.",
+      "Мудрость превращает опыт в понимание.",
+      "Прана-лока связана с жизненной силой.",
       "Апана-лока учит отпускать отжившее.",
-      "Вьяна-лока распределяет энергию по всему пути.",
-      "Человеческий план соединяет земное действие и духовный вопрос.",
-      "Агни-лока сжигает лишнее и дает решимость.",
-      "Рождение человека открывает возможность осознанного выбора.",
-      "Неведение возвращает вниз, когда игрок теряет различение.",
-      "Правильное знание поднимает через прямое видение.",
-      "Различение помогает отделить полезное от привычного.",
+      "Вьяна-лока распределяет энергию.",
+      "Человеческий план соединяет земное и духовное.",
+      "Агни-лока сжигает лишнее.",
+      "Рождение человека открывает возможность выбора.",
+      "Неведение возвращает вниз.",
+      "Правильное знание дает прямое видение.",
+      "Различение отделяет полезное от привычного.",
       "Нейтральность дает паузу между стимулом и реакцией.",
-      "Солнечный план усиливает волю, ясность и ответственность.",
-      "Лунный план усиливает чувствительность, ритм и восприимчивость.",
+      "Солнечный план усиливает волю.",
+      "Лунный план усиливает чувствительность.",
       "Аскеза поднимает через добровольную дисциплину.",
-      "Земля возвращает к устойчивости и простым действиям.",
-      "Насилие резко опускает, потому что разрушает связь.",
-      "План жидкости учит гибкости и принятию формы.",
-      "Преданность поднимает через доверие и сердце.",
-      "Эгоизм сужает мир до себя и отправляет назад.",
-      "Первичный звук напоминает о вибрации, слове и намерении.",
-      "План газов связан с движением, дыханием и переменой.",
+      "Земля требует устойчивости.",
+      "Насилие разрушает связь.",
+      "Жидкость учит гибкости.",
+      "Преданность поднимает через доверие.",
+      "Эгоизм сужает мир до себя.",
+      "Первичный звук раскрывает силу слова.",
+      "Газ связан с движением и переменой.",
       "Сияние показывает тонкий свет сознания.",
-      "Реальность требует смотреть прямо, без украшений.",
-      "Позитивный интеллект выбирает ясное и созидающее.",
-      "Негативный интеллект запутывает путь через сомнение и отрицание.",
-      "Счастье проверяет: можно ли радоваться без цепляния.",
-      "Тамас утяжеляет и возвращает к инерции.",
+      "Реальность требует смотреть прямо.",
+      "Позитивный интеллект выбирает ясное.",
+      "Негативный интеллект запутывает сомнением.",
+      "Счастье проверяет привязанность к приятному.",
+      "Тамас утяжеляет.",
       "Пракрити раскрывает природу проявленного мира.",
-      "Внутреннее пространство дает место для тишины.",
-      "Блаженство поднимает к более тонкому восприятию.",
-      "Космическое благо соединяет личный путь с большим порядком.",
-      "Космическое сознание расширяет взгляд за пределы личности.",
-      "Абсолют указывает на источник за пределами формы.",
-      "Саттва очищает и облегчает движение.",
-      "Раджас активирует желание, движение и беспокойство.",
-      "Тамасика показывает последнюю тень инерции перед завершением."
+      "Внутреннее пространство дает место тишине.",
+      "Блаженство утончает восприятие.",
+      "Космическое благо соединяет личное с большим порядком.",
+      "Космическое сознание расширяет взгляд.",
+      "Абсолют указывает за предел формы.",
+      "Саттва очищает.",
+      "Раджас активирует желание и беспокойство.",
+      "Тамасика показывает последнюю инерцию."
     ];
 
     const jumps = {
@@ -694,31 +701,54 @@
 
     const colors = ["#236d86", "#b84536", "#4d8648", "#76528d", "#d39b36", "#33806f"];
 
-    const tokenSkins = {
-      pilgrim: {
-        title: "Странник",
-        svg: `<circle cx="32" cy="32" r="27" fill="#fff6dd" stroke="#201813" stroke-width="4"></circle><circle cx="32" cy="20" r="8" fill="#d39b36" stroke="#201813" stroke-width="3"></circle><path d="M18 49c2-12 8-18 14-18s12 6 14 18" fill="#236d86" stroke="#201813" stroke-width="3" stroke-linecap="round"></path><path d="M22 31c-5 4-7 9-7 15M42 31c5 4 7 9 7 15" fill="none" stroke="#201813" stroke-width="3" stroke-linecap="round"></path>`
-      },
-      flame: {
-        title: "Огонь",
-        svg: `<circle cx="32" cy="32" r="27" fill="#fff6dd" stroke="#201813" stroke-width="4"></circle><path d="M34 9c11 12 12 20 6 28 2-9-5-13-5-20-12 10-18 21-10 33 8 10 25 5 27-8 2-12-9-21-18-33z" fill="#d39b36" stroke="#201813" stroke-width="3" stroke-linejoin="round"></path><path d="M31 32c-6 6-7 12-2 16 6 4 13 0 13-7 0-5-5-8-11-9z" fill="#b84536"></path>`
-      },
-      lotus: {
-        title: "Лотос",
-        svg: `<circle cx="32" cy="32" r="27" fill="#fff6dd" stroke="#201813" stroke-width="4"></circle><path d="M32 14c8 7 8 16 0 25-8-9-8-18 0-25zM16 28c10-2 17 2 20 12-11 2-18-2-20-12zM48 28c-10-2-17 2-20 12 11 2 18-2 20-12z" fill="#76528d" stroke="#201813" stroke-width="3" stroke-linejoin="round"></path><circle cx="32" cy="39" r="6" fill="#d39b36" stroke="#201813" stroke-width="3"></circle>`
-      },
-      star: {
-        title: "Звезда",
-        svg: `<circle cx="32" cy="32" r="27" fill="#fff6dd" stroke="#201813" stroke-width="4"></circle><path d="M32 9l6 16 17 1-13 11 4 17-14-9-14 9 4-17L9 26l17-1z" fill="#33806f" stroke="#201813" stroke-width="3" stroke-linejoin="round"></path><circle cx="32" cy="32" r="5" fill="#fff8e9"></circle>`
-      }
+    const state = {
+      phase: "awaiting_intention",
+      intention: "",
+      entered: false,
+      position: 0,
+      lastRoll: null,
+      busy: false,
+      history: []
     };
 
-    const state = {
-      position: 1,
-      moving: false,
-      skin: "pilgrim",
-      audio: null
-    };
+    function setStage(mode) {
+      stage.className = `stage ${mode}`;
+    }
+
+    function addMessage(role, text) {
+      const node = document.createElement("div");
+      node.className = `message ${role}`;
+      node.textContent = text;
+      messages.appendChild(node);
+      messages.scrollTop = messages.scrollHeight;
+      state.history.push({ role, content: text });
+    }
+
+    function updateStateLine() {
+      if (!state.entered) {
+        stateLine.textContent = "Вход в игру: нужен бросок 6";
+        return;
+      }
+      stateLine.textContent = `Клетка ${state.position}: ${cellNames[state.position - 1]}${state.lastRoll ? ` | последний бросок ${state.lastRoll}` : ""}`;
+    }
+
+    function updateCellCard(n = state.position) {
+      if (!n) {
+        cellCard.innerHTML = `
+          <div class="cell-kicker">Пространство Лилы</div>
+          <div class="cell-title">Кристаллическое зеркало истины</div>
+          <p class="cell-lesson">Сначала сформулируй намерение и подтверди готовность играть без масок.</p>
+        `;
+        return;
+      }
+      const jump = jumps[n];
+      cellCard.innerHTML = `
+        <div class="cell-kicker">Клетка ${n}</div>
+        <div class="cell-title">${cellNames[n - 1]}</div>
+        <p class="cell-lesson">${lessons[n - 1]}</p>
+        <p class="cell-lesson">${jump ? `${jump > n ? "Стрела" : "Змея"} ведет на ${jump}: ${cellNames[jump - 1]}.` : "На этой клетке нет перехода."}</p>
+      `;
+    }
 
     function cellPoint(n) {
       const index = n - 1;
@@ -789,23 +819,8 @@
       return `<svg viewBox="0 0 64 64"><rect x="8" y="8" width="48" height="48" rx="8" fill="#fffaf0" stroke="#201813" stroke-width="4"></rect>${dots.map(([x,y]) => dot(x,y)).join("")}</svg>`;
     }
 
-    function playDiceSound() {
-      try {
-        state.audio = state.audio || new (window.AudioContext || window.webkitAudioContext)();
-        const now = state.audio.currentTime;
-        [0, 0.055, 0.11].forEach((offset, i) => {
-          const osc = state.audio.createOscillator();
-          const gain = state.audio.createGain();
-          osc.type = "triangle";
-          osc.frequency.setValueAtTime(260 + i * 90, now + offset);
-          gain.gain.setValueAtTime(0.0001, now + offset);
-          gain.gain.exponentialRampToValueAtTime(0.08, now + offset + 0.01);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.08);
-          osc.connect(gain).connect(state.audio.destination);
-          osc.start(now + offset);
-          osc.stop(now + offset + 0.09);
-        });
-      } catch {}
+    function tokenSvg() {
+      return `<circle cx="32" cy="32" r="27" fill="#fff6dd" stroke="#201813" stroke-width="4"></circle><circle cx="32" cy="20" r="8" fill="#d39b36" stroke="#201813" stroke-width="3"></circle><path d="M18 49c2-12 8-18 14-18s12 6 14 18" fill="#236d86" stroke="#201813" stroke-width="3" stroke-linecap="round"></path><path d="M22 31c-5 4-7 9-7 15M42 31c5 4 7 9 7 15" fill="none" stroke="#201813" stroke-width="3" stroke-linecap="round"></path>`;
     }
 
     function buildBoard() {
@@ -816,8 +831,7 @@
         const rowCells = Array.from({ length: cols }, (_, i) => rowStart + i);
         if (visualRowFromBottom % 2 === 1) rowCells.reverse();
         for (const n of rowCells) {
-          const cell = document.createElement("button");
-          cell.type = "button";
+          const cell = document.createElement("div");
           cell.className = "cell";
           if (n === totalCells) cell.classList.add("goal");
           if (jumps[n]) cell.classList.add("transfer-cell");
@@ -828,31 +842,9 @@
             ${symbolSvg(n, color)}
             <span class="cell-name">${cellNames[n - 1]}</span>
           `;
-          cell.addEventListener("click", () => showCellCard(n, "Просмотр"));
           board.appendChild(cell);
         }
       }
-    }
-
-    function buildTokenPicker() {
-      tokenOptions.innerHTML = "";
-      Object.entries(tokenSkins).forEach(([key, skin]) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = `token-option ${key === state.skin ? "active" : ""}`;
-        button.title = skin.title;
-        button.innerHTML = `<svg viewBox="0 0 64 64" aria-hidden="true">${skin.svg}</svg>`;
-        button.addEventListener("click", () => {
-          state.skin = key;
-          renderToken();
-          buildTokenPicker();
-        });
-        tokenOptions.appendChild(button);
-      });
-    }
-
-    function renderToken() {
-      token.innerHTML = tokenSkins[state.skin].svg;
     }
 
     function drawJumps() {
@@ -867,42 +859,37 @@
       });
     }
 
-    function showCellCard(n, prefix = "Клетка") {
-      cardMeta.textContent = `${prefix} ${n}`;
-      cardTitle.textContent = cellNames[n - 1];
-      cardText.textContent = lessons[n - 1];
-      const jump = jumps[n];
-      cardHint.textContent = jump ? `${jump > n ? "Стрела" : "Возврат"} ведет на клетку ${jump}: ${cellNames[jump - 1]}.` : "На этой клетке нет перехода.";
-    }
-
-    function updateDebugHint(n = state.position, syncInput = true) {
-      if (syncInput) debugCellInput.value = String(n);
-      const jump = jumps[n];
-      debugHint.textContent = jump ? `Клетка ${n}: есть ${jump > n ? "стрела" : "возврат"} на ${jump}.` : `Клетка ${n}: перехода нет.`;
-      debugJumpButton.disabled = state.moving || !jump;
-      debugMoveButton.disabled = state.moving;
-    }
-
     function placeToken() {
+      if (!state.position) return;
       const p = cellPoint(state.position);
       token.style.left = `${(p.x / 800) * 100}%`;
       token.style.top = `${(p.y / 900) * 100}%`;
       document.querySelectorAll(".cell.current").forEach((c) => c.classList.remove("current"));
       const cell = document.querySelector(`[data-cell="${state.position}"]`);
       if (cell) cell.classList.add("current");
-      positionValue.textContent = String(state.position);
-      showCellCard(state.position, "Текущая клетка");
-      updateDebugHint(state.position);
-    }
-
-    function writeLog(text) {
-      const item = document.createElement("div");
-      item.textContent = text;
-      log.prepend(item);
+      updateCellCard(state.position);
+      updateStateLine();
     }
 
     function sleep(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function rollDiceValue() {
+      return Math.floor(Math.random() * 6) + 1;
+    }
+
+    async function rollDiceAnimation(finalValue) {
+      die.classList.remove("rolling");
+      void die.offsetWidth;
+      die.classList.add("rolling");
+      for (let i = 0; i < 12; i++) {
+        const value = i === 11 ? finalValue : rollDiceValue();
+        die.innerHTML = diceSvg(value);
+        await sleep(45 + i * 7);
+      }
+      state.lastRoll = finalValue;
+      updateStateLine();
     }
 
     async function animateTo(target) {
@@ -988,119 +975,158 @@
       await animateJump(from, to);
     }
 
-    function readDebugCell() {
-      const raw = Number(debugCellInput.value);
-      if (!Number.isFinite(raw)) return state.position;
-      return Math.min(totalCells, Math.max(1, Math.round(raw)));
-    }
+    async function showBoardForMove(roll) {
+      setStage("board");
+      await sleep(250);
+      await rollDiceAnimation(roll);
 
-    async function debugMoveToCell() {
-      if (state.moving) return;
-      const target = readDebugCell();
-      state.moving = true;
-      rollButton.disabled = true;
-      debugMoveButton.disabled = true;
-      debugJumpButton.disabled = true;
-      await animateTo(target);
-      writeLog(`Отладка: переход на клетку ${target}.`);
-      rollButton.disabled = state.position === totalCells;
-      state.moving = false;
-      updateDebugHint(state.position);
-    }
-
-    async function debugFollowJump() {
-      if (state.moving) return;
-      const from = readDebugCell();
-      const to = jumps[from];
-      if (!to) {
-        setTransferFocus(from, from, false);
-        updateDebugHint(from);
-        showCellCard(from, "Отладка");
-        return;
-      }
-      state.moving = true;
-      rollButton.disabled = true;
-      debugMoveButton.disabled = true;
-      debugJumpButton.disabled = true;
-      state.position = from;
-      placeToken();
-      await dramaticTransfer(from, to);
-      writeLog(`Отладка: ${from} -> ${to} по линии.`);
-      rollButton.disabled = state.position === totalCells;
-      state.moving = false;
-      updateDebugHint(state.position);
-    }
-
-    async function roll() {
-      if (state.moving) return;
-      state.moving = true;
-      rollButton.disabled = true;
-      playDiceSound();
-      die.classList.remove("rolling");
-      void die.offsetWidth;
-      die.classList.add("rolling");
-
-      let result = 1;
-      for (let i = 0; i < 12; i++) {
-        result = Math.floor(Math.random() * 6) + 1;
-        die.innerHTML = diceSvg(result);
-        diceValue.textContent = String(result);
-        await sleep(45 + i * 7);
+      let transition = null;
+      if (!state.entered) {
+        if (roll === 6) {
+          state.entered = true;
+          state.position = 1;
+          placeToken();
+        }
+        await sleep(900);
+        return transition;
       }
 
-      let target = state.position + result;
-      if (target > totalCells) {
-        target = totalCells - (target - totalCells);
-        writeLog(`Бросок ${result}: точный вход не вышел, фишка отскочила на ${target}.`);
-      } else {
-        writeLog(`Бросок ${result}: движение на клетку ${target}.`);
-      }
-
+      let target = state.position + roll;
+      if (target > totalCells) target = totalCells - (target - totalCells);
       await animateTo(target);
 
       if (jumps[state.position]) {
         const from = state.position;
-        const next = jumps[from];
-        const up = next > state.position;
-        writeLog(`${cellNames[from - 1]}: ${up ? "подъем" : "возврат"} на ${next}.`);
-        await dramaticTransfer(from, next);
+        const to = jumps[from];
+        transition = { from, to, type: to > from ? "Стрела" : "Змея" };
+        await dramaticTransfer(from, to);
       }
 
-      if (state.position === totalCells) {
-        writeLog("Финиш: путь завершен.");
-        rollButton.disabled = true;
-      } else {
-        rollButton.disabled = false;
-      }
-      state.moving = false;
+      await sleep(700);
+      return transition;
     }
 
-    function reset() {
-      state.position = 1;
-      state.moving = false;
-      diceValue.textContent = "-";
-      die.innerHTML = diceSvg(1);
-      log.innerHTML = "";
-      rollButton.disabled = false;
-      setTransferFocus(1, 1, false);
-      placeToken();
-      writeLog("Новая партия началась.");
+    function buildLocalPromptContext(move) {
+      const n = state.position || 0;
+      const cellName = n ? cellNames[n - 1] : "Вход еще не открыт";
+      const lesson = n ? lessons[n - 1] : "Игрок еще стоит перед порогом.";
+      const entered = state.entered ? "игра началась" : "игра не началась";
+      const transition = move.transition ? `${move.transition.type}: ${move.transition.from} (${cellNames[move.transition.from - 1]}) -> ${move.transition.to} (${cellNames[move.transition.to - 1]})` : "перехода нет";
+      return { n, cellName, lesson, entered, transition };
     }
+
+    async function askGpt(userText, move) {
+      if (GPT_ENDPOINT) {
+        const response = await fetch(GPT_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system: SYSTEM_PROMPT,
+            state,
+            move,
+            messages: state.history.slice(-12),
+            user: userText
+          })
+        });
+        if (!response.ok) throw new Error("GPT endpoint error");
+        const data = await response.json();
+        return data.reply || data.text || data.message || localMasterReply(userText, move);
+      }
+      return localMasterReply(userText, move);
+    }
+
+    function localMasterReply(userText, move) {
+      const ctx = buildLocalPromptContext(move);
+      if (state.phase === "awaiting_intention") {
+        return "Ты вошла в пространство Лилы, но не в игру. Сначала назови свое Намерение так, чтобы оно не пряталось за красивой формулировкой. Второе: подтверди готовность смотреть на факты без маски.\n\n1. Что именно ты хочешь вскрыть через игру?\n2. Готова ли ты не спорить с тем, что доска покажет?";
+      }
+      if (!state.entered) {
+        return `Бросок: ${move.roll}. Вход не открыт. Шестерка не выпала, и это не случайная задержка: часть тебя хочет результата, но еще торгуется с ценой честности.\n\nТвое Намерение: ${state.intention}\n\nПорог Лилы не пропускает того, кто хочет наблюдать процесс со стороны. Здесь либо входишь, либо продолжаешь изображать готовность.\n\n1. Где именно ты сейчас оставляешь себе лазейку?\n2. Что ты называешь осторожностью, хотя это просто отказ войти?`;
+      }
+      if (move.enteredNow) {
+        return `Бросок: 6. Вход открыт. Клетка 1 — Рождение.\n\nТы не “начинаешь практику”. Ты родилась внутри собственного запроса, а значит больше нельзя делать вид, что он внешний. Намерение теперь будет проверять не твои слова, а твою способность выдерживать отражение.\n\nТень клетки: желание начать красиво, без грязи, без страха, без признания зависимости. Но рождение всегда мокрое, резкое и необратимое.\n\n1. Что в твоем запросе ты хотела бы оставить стерильным?\n2. Какую правду ты уже знаешь, но еще не произнесла?`;
+      }
+
+      let transitionText = "";
+      if (move.transition) {
+        const from = cellNames[move.transition.from - 1];
+        const to = cellNames[move.transition.to - 1];
+        const vector = move.transition.to > move.transition.from ? "восходящий поток" : "нисходящий поток";
+        transitionText = `\n\n${move.transition.type}: ${move.transition.from} (${from}) -> ${move.transition.to} (${to}). Это ${vector}. Причина не в “награде” и не в “наказании”, а в связи: ${from} вскрывает механизм, который неизбежно переносит тебя в ${to}. Относительно твоего Намерения это место, где следствие уже было заложено в мотиве.`;
+      }
+
+      return `Бросок: ${move.roll}. Клетка ${ctx.n} — ${ctx.cellName}.\n\n${ctx.lesson}\n\nРазбор: смотри не на название клетки, а на то, что оно делает с твоим Намерением: ${state.intention}. Эта клетка показывает не идею, а привычный способ защиты. Там, где ты говоришь “я разбираюсь”, может быть контроль. Там, где говоришь “я принимаю”, может быть усталость бороться. Там, где говоришь “мне все равно”, часто лежит не свобода, а отказ чувствовать цену выбора.${transitionText}\n\n1. Какую выгоду тебе дает оставаться в этой клетке?\n2. Какую часть ответа ты сейчас пытаешься сделать умной, чтобы не сделать ее честной?`;
+    }
+
+    function makeMoveResult(roll, transition, enteredBefore) {
+      return {
+        roll,
+        enteredBefore,
+        enteredNow: !enteredBefore && state.entered,
+        position: state.position,
+        cell: state.position ? cellNames[state.position - 1] : null,
+        transition
+      };
+    }
+
+    async function processUserText(text) {
+      addMessage("user", text);
+      userInput.value = "";
+      state.busy = true;
+      sendButton.disabled = true;
+      userInput.disabled = true;
+
+      if (state.phase === "awaiting_intention") {
+        state.intention = text;
+        state.phase = "playing";
+      }
+
+      const enteredBefore = state.entered;
+      const roll = rollDiceValue();
+      const transition = await showBoardForMove(roll);
+      const move = makeMoveResult(roll, transition, enteredBefore);
+
+      setStage("thinking");
+      await sleep(2300);
+
+      let reply;
+      try {
+        reply = await askGpt(text, move);
+      } catch {
+        reply = localMasterReply(text, move);
+      }
+
+      addMessage("master", reply);
+      updateCellCard(state.position);
+      updateStateLine();
+      setStage("answer");
+
+      state.busy = false;
+      sendButton.disabled = false;
+      userInput.disabled = false;
+      userInput.focus();
+    }
+
+    composer.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const text = userInput.value.trim();
+      if (!text || state.busy) return;
+      processUserText(text);
+    });
+
+    userInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+        composer.requestSubmit();
+      }
+    });
 
     buildBoard();
-    buildTokenPicker();
-    renderToken();
     drawJumps();
+    token.innerHTML = tokenSvg();
     die.innerHTML = diceSvg(1);
-    placeToken();
-    writeLog("Новая партия началась.");
-
-    rollButton.addEventListener("click", roll);
-    resetButton.addEventListener("click", reset);
-    debugMoveButton.addEventListener("click", debugMoveToCell);
-    debugJumpButton.addEventListener("click", debugFollowJump);
-    debugCellInput.addEventListener("input", () => updateDebugHint(readDebugCell(), false));
-    window.addEventListener("resize", placeToken);
+    updateCellCard(0);
+    updateStateLine();
+    addMessage("master", "Я приветствую тебя в пространстве Лилы.\n\nПеред броском выполни два условия:\n\n1. Четко сформулируй свое Намерение — запрос к игре, без красивой дымки и без защиты.\n2. Подтверди готовность играть без масок и смотреть в лицо фактам.\n\nКогда ответишь, будет сделан первый бросок на вход. Войти можно только через 6.");
   </script>
 </body>
 </html>
