@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Лила - векторная игра</title>
+  <style>
+    :root {
+      --bg: #f6f0df;
+      --ink: #251d15;
+      --muted: #6c5c4b;
+      --line: #48382b;
+      --gold: #d9a441;
+      --red: #b84536;
+      --blue: #2f6f8f;
+      --green: #56864b;
+      --violet: #79588e;
+      --cell: #fffaf0;
+      --cell-alt: #f0e4cc;
+      --shadow: rgba(37, 29, 21, 0.16);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 18%, rgba(217, 164, 65, 0.28), transparent 24rem),
+        linear-gradient(135deg, #f7efd9 0%, #f2e4c4 42%, #e7d6bd 100%);
+      display: grid;
+      place-items: center;
+      padding: clamp(14px, 2.5vw, 28px);
+    }
+
+    .game {
+      width: min(1220px, 100%);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .board-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 8 / 9;
+      min-height: 420px;
+      border: 3px solid var(--line);
+      background: #cfa657;
+      box-shadow: 0 20px 50px var(--shadow);
+      overflow: hidden;
+    }
+
+    .board {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(9, 1fr);
+      border: 2px solid rgba(37, 29, 21, 0.34);
+    }
+
+    .cell {
+      position: relative;
+      display: grid;
+      place-items: center;
+      background: var(--cell);
+      border: 1px solid rgba(37, 29, 21, 0.34);
+      overflow: hidden;
+    }
+
+    .cell:nth-child(2n) { background: var(--cell-alt); }
+    .cell.goal { background: #ffe9a8; }
+    .cell.current { box-shadow: inset 0 0 0 4px rgba(184, 69, 54, 0.65); }
+
+    .cell-number {
+      position: absolute;
+      top: 5px;
+      left: 6px;
+      font: 700 clamp(9px, 1.05vw, 14px) / 1 "Segoe UI", Arial, sans-serif;
+      color: rgba(37, 29, 21, 0.7);
+    }
+
+    .cell-name {
+      position: absolute;
+      right: 5px;
+      bottom: 4px;
+      max-width: calc(100% - 10px);
+      text-align: right;
+      font: 650 clamp(6px, 0.75vw, 10px) / 1.08 "Segoe UI", Arial, sans-serif;
+      color: rgba(37, 29, 21, 0.72);
+      overflow-wrap: anywhere;
+    }
+
+    .cell svg {
+      width: min(48%, 44px);
+      height: min(48%, 44px);
+      color: var(--blue);
+      opacity: 0.92;
+    }
+
+    .path-lines {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .jump {
+      fill: none;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0.82;
+      filter: drop-shadow(0 2px 1px rgba(37, 29, 21, 0.2));
+    }
+
+    .jump.up { stroke: var(--green); marker-end: url(#arrowHead); }
+    .jump.down { stroke: var(--red); marker-end: url(#arrowHeadRed); }
+
+    .token {
+      position: absolute;
+      z-index: 5;
+      width: clamp(30px, 5vw, 52px);
+      height: clamp(30px, 5vw, 52px);
+      transform: translate(-50%, -50%);
+      transition: left 260ms ease, top 260ms ease, transform 180ms ease;
+      filter: drop-shadow(0 7px 7px rgba(37, 29, 21, 0.28));
+      pointer-events: none;
+    }
+
+    .token.step {
+      transform: translate(-50%, -58%) scale(1.06);
+    }
+
+    .panel {
+      min-height: 420px;
+      border: 3px solid var(--line);
+      background: rgba(255, 250, 240, 0.94);
+      box-shadow: 0 20px 50px var(--shadow);
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.4;
+      font-size: 14px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat {
+      border: 2px solid rgba(72, 56, 43, 0.28);
+      background: #fff8e8;
+      padding: 10px;
+      min-height: 68px;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .value {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .dice-row {
+      display: grid;
+      grid-template-columns: 82px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .die {
+      width: 82px;
+      height: 82px;
+      border: 3px solid var(--line);
+      background: #fffdf5;
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 -7px 0 rgba(37, 29, 21, 0.08);
+    }
+
+    .die svg { width: 68px; height: 68px; }
+
+    button {
+      height: 48px;
+      border: 0;
+      background: var(--ink);
+      color: #fffaf0;
+      font: 800 15px / 1 "Segoe UI", Arial, sans-serif;
+      cursor: pointer;
+      transition: transform 150ms ease, background 150ms ease;
+    }
+
+    button:hover { background: #3a2d22; }
+    button:active { transform: translateY(1px); }
+    button:disabled {
+      cursor: wait;
+      opacity: 0.68;
+    }
+
+    .secondary {
+      background: transparent;
+      color: var(--ink);
+      border: 2px solid var(--line);
+    }
+
+    .secondary:hover { background: rgba(37, 29, 21, 0.08); }
+
+    .log {
+      min-height: 92px;
+      max-height: 160px;
+      overflow: auto;
+      border: 2px solid rgba(72, 56, 43, 0.28);
+      background: #fff8e8;
+      padding: 10px;
+      font-size: 13px;
+      line-height: 1.38;
+      color: #3f3025;
+    }
+
+    .legend {
+      display: grid;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .swatch {
+      width: 28px;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--green);
+    }
+
+    .swatch.red { background: var(--red); }
+
+    @media (max-width: 900px) {
+      body { align-items: start; }
+      .game { grid-template-columns: 1fr; }
+      .panel { min-height: 0; }
+      .board-wrap { min-height: 360px; }
+    }
+
+    @media (max-width: 520px) {
+      .stats { grid-template-columns: 1fr; }
+      .dice-row { grid-template-columns: 72px 1fr; }
+      .die { width: 72px; height: 72px; }
+      .die svg { width: 58px; height: 58px; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game" aria-label="Векторная настольная игра Лила">
+    <section class="board-wrap" id="boardWrap" aria-label="Доска">
+      <svg class="path-lines" id="pathLines" viewBox="0 0 800 900" aria-hidden="true">
+        <defs>
+          <marker id="arrowHead" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#56864b"></path>
+          </marker>
+          <marker id="arrowHeadRed" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#b84536"></path>
+          </marker>
+        </defs>
+      </svg>
+      <div class="board" id="board"></div>
+      <svg class="token" id="token" viewBox="0 0 64 64" aria-label="Фишка игрока">
+        <circle cx="32" cy="32" r="27" fill="#fff6dd" stroke="#251d15" stroke-width="4"></circle>
+        <circle cx="32" cy="20" r="8" fill="#d9a441" stroke="#251d15" stroke-width="3"></circle>
+        <path d="M18 49c2-12 8-18 14-18s12 6 14 18" fill="#2f6f8f" stroke="#251d15" stroke-width="3" stroke-linecap="round"></path>
+        <path d="M22 31c-5 4-7 9-7 15M42 31c5 4 7 9 7 15" fill="none" stroke="#251d15" stroke-width="3" stroke-linecap="round"></path>
+      </svg>
+    </section>
+
+    <aside class="panel">
+      <div>
+        <h1>Лила</h1>
+        <p class="subtitle">Векторная доска на 72 клетки: бросай кубик, двигай фишку, поднимайся по стрелам и возвращайся по красным путям.</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="label">Клетка</div>
+          <div class="value" id="positionValue">1</div>
+        </div>
+        <div class="stat">
+          <div class="label">Бросок</div>
+          <div class="value" id="diceValue">-</div>
+        </div>
+      </div>
+
+      <div class="dice-row">
+        <div class="die" id="die" aria-label="Кубик"></div>
+        <button id="rollButton" type="button">Бросить кубик</button>
+      </div>
+
+      <button class="secondary" id="resetButton" type="button">Начать заново</button>
+
+      <div class="log" id="log" aria-live="polite"></div>
+
+      <div class="legend">
+        <div class="legend-item"><span class="swatch"></span><span>Зеленая стрела переносит выше.</span></div>
+        <div class="legend-item"><span class="swatch red"></span><span>Красный путь возвращает назад.</span></div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const totalCells = 72;
+    const cols = 8;
+    const rows = 9;
+    const board = document.getElementById("board");
+    const boardWrap = document.getElementById("boardWrap");
+    const token = document.getElementById("token");
+    const rollButton = document.getElementById("rollButton");
+    const resetButton = document.getElementById("resetButton");
+    const positionValue = document.getElementById("positionValue");
+    const diceValue = document.getElementById("diceValue");
+    const die = document.getElementById("die");
+    const log = document.getElementById("log");
+    const pathLines = document.getElementById("pathLines");
+
+    const names = [
+      "Рождение", "Майя", "Гнев", "Жадность", "Тело", "Друзья", "Радость", "Дух",
+      "Карма", "Очищение", "Путь", "Служение", "Дхарма", "Вера", "Пламя", "Слово",
+      "Знание", "Смирение", "Любовь", "Мир", "Тапас", "Музыка", "Сердце", "Садхана",
+      "Свет", "Сила", "Выбор", "Память", "Правда", "Щедрость", "Поток", "Храбрость",
+      "Видение", "Сомнение", "Тишина", "Учитель", "Долг", "Луна", "Солнце", "Река",
+      "Круг", "Воля", "Закон", "Врата", "Небо", "Огонь", "Земля", "Воздух",
+      "Вода", "Мантра", "Алтарь", "Покой", "Игра", "Судьба", "Зеркало", "Мост",
+      "Звезда", "Союз", "Ключ", "Чаша", "Плод", "Песнь", "Ясность", "Радуга",
+      "Победа", "Дар", "Пульс", "Сияние", "Пустота", "Единство", "Блаженство", "Космос"
+    ];
+
+    const colors = ["#2f6f8f", "#b84536", "#56864b", "#79588e", "#d9a441"];
+    const jumps = {
+      5: 22, 9: 31, 17: 44, 28: 55, 40: 59, 52: 67,
+      16: 6, 24: 7, 35: 12, 48: 26, 62: 38, 69: 51
+    };
+
+    const state = {
+      position: 1,
+      moving: false
+    };
+
+    function cellPoint(n) {
+      const index = n - 1;
+      const visualRowFromBottom = Math.floor(index / cols);
+      const row = rows - 1 - visualRowFromBottom;
+      const inRow = index % cols;
+      const col = visualRowFromBottom % 2 === 0 ? inRow : cols - 1 - inRow;
+      return {
+        col,
+        row,
+        x: (col + 0.5) * 100,
+        y: (row + 0.5) * 100
+      };
+    }
+
+    function symbolSvg(type, color) {
+      const common = `fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"`;
+      const fill = `fill="${color}" opacity="0.16"`;
+      const symbols = [
+        `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="18" ${fill}/><path ${common} d="M32 7v50M7 32h50M16 16l32 32M48 16 16 48"/></svg>`,
+        `<svg viewBox="0 0 64 64"><path ${common} d="M32 7l7 17 18 2-14 12 4 18-15-10-15 10 4-18L7 26l18-2z"/><circle cx="32" cy="32" r="6" fill="${color}"/></svg>`,
+        `<svg viewBox="0 0 64 64"><path ${common} d="M32 8c10 8 16 18 16 28a16 16 0 0 1-32 0c0-10 6-20 16-28z"/><path ${common} d="M24 39c5 4 11 4 16 0"/></svg>`,
+        `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" ${fill}/><path ${common} d="M18 34c8-15 20-15 28 0M18 34c8 15 20 15 28 0"/><circle cx="32" cy="32" r="5" fill="${color}"/></svg>`,
+        `<svg viewBox="0 0 64 64"><path ${common} d="M32 8v48M18 20h28M14 44h36"/><path ${common} d="M20 20c0 11 5 19 12 24 7-5 12-13 12-24"/></svg>`,
+        `<svg viewBox="0 0 64 64"><path ${common} d="M12 34c10-20 30-20 40 0M12 34c10 20 30 20 40 0"/><path ${common} d="M32 14v36"/><circle cx="32" cy="34" r="6" fill="${color}"/></svg>`,
+        `<svg viewBox="0 0 64 64"><rect x="14" y="14" width="36" height="36" rx="2" ${fill}/><path ${common} d="M14 14h36v36H14zM22 22h20v20H22zM32 14v36M14 32h36"/></svg>`,
+        `<svg viewBox="0 0 64 64"><path ${common} d="M32 8c7 12 15 18 24 20-9 2-17 8-24 20-7-12-15-18-24-20 9-2 17-8 24-20z"/><circle cx="32" cy="28" r="5" fill="${color}"/></svg>`
+      ];
+      return symbols[type % symbols.length];
+    }
+
+    function diceSvg(value) {
+      const dot = (x, y) => `<circle cx="${x}" cy="${y}" r="5" fill="#251d15"></circle>`;
+      const dots = {
+        1: [[32,32]],
+        2: [[22,22],[42,42]],
+        3: [[22,22],[32,32],[42,42]],
+        4: [[22,22],[42,22],[22,42],[42,42]],
+        5: [[22,22],[42,22],[32,32],[22,42],[42,42]],
+        6: [[22,20],[42,20],[22,32],[42,32],[22,44],[42,44]]
+      }[value] || [];
+      return `<svg viewBox="0 0 64 64"><rect x="8" y="8" width="48" height="48" rx="8" fill="#fffaf0" stroke="#251d15" stroke-width="4"></rect>${dots.map(([x,y]) => dot(x,y)).join("")}</svg>`;
+    }
+
+    function buildBoard() {
+      board.innerHTML = "";
+      for (let displayRow = 0; displayRow < rows; displayRow++) {
+        const visualRowFromBottom = rows - 1 - displayRow;
+        const rowStart = visualRowFromBottom * cols + 1;
+        const rowCells = Array.from({ length: cols }, (_, i) => rowStart + i);
+        if (visualRowFromBottom % 2 === 1) rowCells.reverse();
+        for (const n of rowCells) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          if (n === totalCells) cell.classList.add("goal");
+          cell.dataset.cell = String(n);
+          const color = colors[n % colors.length];
+          cell.innerHTML = `
+            <span class="cell-number">${n}</span>
+            ${symbolSvg(n, color)}
+            <span class="cell-name">${names[n - 1]}</span>
+          `;
+          board.appendChild(cell);
+        }
+      }
+    }
+
+    function drawJumps() {
+      const old = pathLines.querySelectorAll(".jump");
+      old.forEach((node) => node.remove());
+      Object.entries(jumps).forEach(([from, to]) => {
+        const a = cellPoint(Number(from));
+        const b = cellPoint(Number(to));
+        const midY = (a.y + b.y) / 2;
+        const curve = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        curve.setAttribute("class", `jump ${to > from ? "up" : "down"}`);
+        curve.setAttribute("d", `M ${a.x} ${a.y} C ${a.x} ${midY}, ${b.x} ${midY}, ${b.x} ${b.y}`);
+        pathLines.appendChild(curve);
+      });
+    }
+
+    function placeToken() {
+      const p = cellPoint(state.position);
+      token.style.left = `${(p.x / 800) * 100}%`;
+      token.style.top = `${(p.y / 900) * 100}%`;
+      document.querySelectorAll(".cell.current").forEach((c) => c.classList.remove("current"));
+      const cell = document.querySelector(`[data-cell="${state.position}"]`);
+      if (cell) cell.classList.add("current");
+      positionValue.textContent = String(state.position);
+    }
+
+    function writeLog(text) {
+      const item = document.createElement("div");
+      item.textContent = text;
+      log.prepend(item);
+    }
+
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    async function animateTo(target) {
+      const direction = target >= state.position ? 1 : -1;
+      while (state.position !== target) {
+        state.position += direction;
+        token.classList.add("step");
+        placeToken();
+        await sleep(170);
+        token.classList.remove("step");
+        await sleep(80);
+      }
+    }
+
+    async function roll() {
+      if (state.moving) return;
+      state.moving = true;
+      rollButton.disabled = true;
+
+      let result = 1;
+      for (let i = 0; i < 10; i++) {
+        result = Math.floor(Math.random() * 6) + 1;
+        die.innerHTML = diceSvg(result);
+        diceValue.textContent = String(result);
+        await sleep(55 + i * 8);
+      }
+
+      let target = state.position + result;
+      if (target > totalCells) {
+        target = totalCells - (target - totalCells);
+        writeLog(`Бросок ${result}: точный вход не вышел, фишка отскочила на ${target}.`);
+      } else {
+        writeLog(`Бросок ${result}: движение на ${target}.`);
+      }
+
+      await animateTo(target);
+
+      if (jumps[state.position]) {
+        const next = jumps[state.position];
+        const up = next > state.position;
+        writeLog(`${names[state.position - 1]}: ${up ? "подъем" : "возврат"} на клетку ${next}.`);
+        await sleep(300);
+        await animateTo(next);
+      }
+
+      if (state.position === totalCells) {
+        writeLog("Финиш: Космос достигнут.");
+        rollButton.disabled = true;
+      } else {
+        rollButton.disabled = false;
+      }
+      state.moving = false;
+    }
+
+    function reset() {
+      state.position = 1;
+      state.moving = false;
+      diceValue.textContent = "-";
+      die.innerHTML = diceSvg(1);
+      log.innerHTML = "";
+      rollButton.disabled = false;
+      placeToken();
+      writeLog("Новая партия началась.");
+    }
+
+    buildBoard();
+    drawJumps();
+    die.innerHTML = diceSvg(1);
+    placeToken();
+    writeLog("Новая партия началась.");
+
+    rollButton.addEventListener("click", roll);
+    resetButton.addEventListener("click", reset);
+    window.addEventListener("resize", placeToken);
+  </script>
+</body>
+</html>
