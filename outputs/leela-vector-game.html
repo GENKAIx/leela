@@ -230,6 +230,31 @@
       align-items: center;
     }
 
+    .debug-panel {
+      border: 2px dashed rgba(64, 49, 38, 0.32);
+      background: rgba(255, 250, 240, 0.72);
+      padding: 10px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .debug-controls {
+      display: grid;
+      grid-template-columns: 76px 1fr 1fr;
+      gap: 8px;
+    }
+
+    .debug-controls input {
+      min-width: 0;
+      height: 44px;
+      border: 2px solid rgba(64, 49, 38, 0.42);
+      background: #fffdf5;
+      color: var(--ink);
+      font: 800 16px / 1 "Segoe UI", Arial, sans-serif;
+      text-align: center;
+      padding: 0 8px;
+    }
+
     .die {
       width: 84px;
       height: 84px;
@@ -365,6 +390,7 @@
     @media (max-width: 540px) {
       .stats { grid-template-columns: 1fr; }
       .dice-row { grid-template-columns: 74px 1fr; }
+      .debug-controls { grid-template-columns: 1fr; }
       .die { width: 74px; height: 74px; }
       .die svg { width: 58px; height: 58px; }
       h1 { font-size: 25px; }
@@ -425,6 +451,16 @@
         <button id="rollButton" type="button">Бросить кубик</button>
       </div>
 
+      <div class="debug-panel">
+        <div class="label">Отладка переходов</div>
+        <div class="debug-controls">
+          <input id="debugCellInput" type="number" min="1" max="72" value="1" aria-label="Номер клетки для отладки" />
+          <button class="secondary" id="debugMoveButton" type="button">На клетку</button>
+          <button class="secondary" id="debugJumpButton" type="button">По стрелке</button>
+        </div>
+        <p class="hint" id="debugHint">Выбери клетку 1-72 и проверь переход.</p>
+      </div>
+
       <button class="secondary" id="resetButton" type="button">Начать заново</button>
 
       <section class="card" aria-live="polite">
@@ -462,6 +498,10 @@
     const cardTitle = document.getElementById("cardTitle");
     const cardText = document.getElementById("cardText");
     const cardHint = document.getElementById("cardHint");
+    const debugCellInput = document.getElementById("debugCellInput");
+    const debugMoveButton = document.getElementById("debugMoveButton");
+    const debugJumpButton = document.getElementById("debugJumpButton");
+    const debugHint = document.getElementById("debugHint");
 
     const cellNames = [
       "Рождение", "Иллюзия", "Гнев", "Жадность", "Физический план", "Заблуждение", "Тщеславие", "Алчность",
@@ -735,6 +775,14 @@
       cardHint.textContent = jump ? `${jump > n ? "Стрела" : "Возврат"} ведет на клетку ${jump}: ${cellNames[jump - 1]}.` : "На этой клетке нет перехода.";
     }
 
+    function updateDebugHint(n = state.position, syncInput = true) {
+      if (syncInput) debugCellInput.value = String(n);
+      const jump = jumps[n];
+      debugHint.textContent = jump ? `Клетка ${n}: есть ${jump > n ? "стрела" : "возврат"} на ${jump}.` : `Клетка ${n}: перехода нет.`;
+      debugJumpButton.disabled = state.moving || !jump;
+      debugMoveButton.disabled = state.moving;
+    }
+
     function placeToken() {
       const p = cellPoint(state.position);
       token.style.left = `${(p.x / 800) * 100}%`;
@@ -744,6 +792,7 @@
       if (cell) cell.classList.add("current");
       positionValue.textContent = String(state.position);
       showCellCard(state.position, "Текущая клетка");
+      updateDebugHint(state.position);
     }
 
     function writeLog(text) {
@@ -791,6 +840,49 @@
         }
         requestAnimationFrame(frame);
       });
+    }
+
+    function readDebugCell() {
+      const raw = Number(debugCellInput.value);
+      if (!Number.isFinite(raw)) return state.position;
+      return Math.min(totalCells, Math.max(1, Math.round(raw)));
+    }
+
+    async function debugMoveToCell() {
+      if (state.moving) return;
+      const target = readDebugCell();
+      state.moving = true;
+      rollButton.disabled = true;
+      debugMoveButton.disabled = true;
+      debugJumpButton.disabled = true;
+      await animateTo(target);
+      writeLog(`Отладка: переход на клетку ${target}.`);
+      rollButton.disabled = state.position === totalCells;
+      state.moving = false;
+      updateDebugHint(state.position);
+    }
+
+    async function debugFollowJump() {
+      if (state.moving) return;
+      const from = readDebugCell();
+      const to = jumps[from];
+      if (!to) {
+        updateDebugHint(from);
+        showCellCard(from, "Отладка");
+        return;
+      }
+      state.moving = true;
+      rollButton.disabled = true;
+      debugMoveButton.disabled = true;
+      debugJumpButton.disabled = true;
+      state.position = from;
+      placeToken();
+      await sleep(160);
+      await animateJump(from, to);
+      writeLog(`Отладка: ${from} -> ${to} по линии.`);
+      rollButton.disabled = state.position === totalCells;
+      state.moving = false;
+      updateDebugHint(state.position);
     }
 
     async function roll() {
@@ -858,6 +950,9 @@
 
     rollButton.addEventListener("click", roll);
     resetButton.addEventListener("click", reset);
+    debugMoveButton.addEventListener("click", debugMoveToCell);
+    debugJumpButton.addEventListener("click", debugFollowJump);
+    debugCellInput.addEventListener("input", () => updateDebugHint(readDebugCell(), false));
     window.addEventListener("resize", placeToken);
   </script>
 </body>
