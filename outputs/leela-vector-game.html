@@ -147,15 +147,28 @@
 
     .jump {
       fill: none;
-      stroke-width: 5;
+      stroke-width: 3.5;
       stroke-linecap: round;
       stroke-linejoin: round;
-      opacity: 0.86;
-      filter: drop-shadow(0 2px 1px rgba(32, 24, 19, 0.22));
+      opacity: 0.46;
+      filter: drop-shadow(0 1px 1px rgba(32, 24, 19, 0.14));
+      transition: opacity 180ms ease, stroke-width 180ms ease, filter 180ms ease;
     }
 
     .jump.up { stroke: var(--green); marker-end: url(#arrowHead); }
     .jump.down { stroke: var(--red); marker-end: url(#arrowHeadRed); }
+
+    .jump.active {
+      stroke-width: 6;
+      opacity: 0.96;
+      filter: drop-shadow(0 0 8px rgba(255, 248, 233, 0.72)) drop-shadow(0 3px 3px rgba(32, 24, 19, 0.28));
+      animation: activePath 760ms ease-in-out infinite alternate;
+    }
+
+    @keyframes activePath {
+      from { stroke-dasharray: 10 10; stroke-dashoffset: 20; }
+      to { stroke-dasharray: 18 8; stroke-dashoffset: 0; }
+    }
 
     .token {
       position: absolute;
@@ -169,6 +182,54 @@
     }
 
     .token.step { transform: translate(-50%, -61%) scale(1.08); }
+    .token.boost { animation: tokenBoost 620ms ease-in-out infinite alternate; }
+    .token.drop { animation: tokenDrop 520ms ease-in-out infinite alternate; }
+
+    @keyframes tokenBoost {
+      from { transform: translate(-50%, -58%) scale(1.04) rotate(-3deg); filter: drop-shadow(0 8px 8px rgba(32, 24, 19, 0.28)); }
+      to { transform: translate(-50%, -72%) scale(1.16) rotate(3deg); filter: drop-shadow(0 0 15px rgba(211, 155, 54, 0.72)); }
+    }
+
+    @keyframes tokenDrop {
+      from { transform: translate(-50%, -48%) scale(1.04) rotate(4deg); filter: drop-shadow(0 8px 8px rgba(32, 24, 19, 0.3)); }
+      to { transform: translate(-50%, -35%) scale(0.94) rotate(-5deg); filter: drop-shadow(0 10px 4px rgba(184, 69, 54, 0.42)); }
+    }
+
+    .transfer-effects {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .transfer-particle {
+      position: absolute;
+      left: calc(var(--x) * 1%);
+      top: calc(var(--y) * 1%);
+      width: var(--size);
+      height: var(--size);
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(0.2);
+      animation: particleBurst 760ms ease-out forwards;
+      animation-delay: var(--delay);
+    }
+
+    .transfer-particle.up {
+      background: radial-gradient(circle, #fff7b8 0 18%, rgba(211, 155, 54, 0.9) 19% 48%, rgba(77, 134, 72, 0) 70%);
+      box-shadow: 0 0 14px rgba(211, 155, 54, 0.55);
+    }
+
+    .transfer-particle.down {
+      background: radial-gradient(circle, #ffe1d9 0 18%, rgba(184, 69, 54, 0.9) 19% 48%, rgba(184, 69, 54, 0) 70%);
+      box-shadow: 0 0 14px rgba(184, 69, 54, 0.5);
+    }
+
+    @keyframes particleBurst {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+      30% { opacity: 1; }
+      100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.35); }
+    }
 
     .panel {
       min-height: 430px;
@@ -437,6 +498,7 @@
           </defs>
         </svg>
         <div class="board" id="board"></div>
+        <div class="transfer-effects" id="transferEffects" aria-hidden="true"></div>
         <svg class="token" id="token" viewBox="0 0 64 64" aria-label="Фишка игрока"></svg>
       </div>
     </section>
@@ -514,6 +576,7 @@
     const die = document.getElementById("die");
     const log = document.getElementById("log");
     const pathLines = document.getElementById("pathLines");
+    const transferEffects = document.getElementById("transferEffects");
     const tokenOptions = document.getElementById("tokenOptions");
     const cardMeta = document.getElementById("cardMeta");
     const cardTitle = document.getElementById("cardTitle");
@@ -784,6 +847,8 @@
         const curve = document.createElementNS("http://www.w3.org/2000/svg", "path");
         curve.setAttribute("class", `jump ${to > from ? "up" : "down"}`);
         curve.setAttribute("d", jumpPathData(Number(from), Number(to)));
+        curve.dataset.from = String(from);
+        curve.dataset.to = String(to);
         pathLines.appendChild(curve);
       });
     }
@@ -838,10 +903,36 @@
       }
     }
 
+    function setActiveJump(from, to, active) {
+      const path = pathLines.querySelector(`.jump[data-from="${from}"][data-to="${to}"]`);
+      if (path) path.classList.toggle("active", active);
+    }
+
+    function createTransferParticles(curve, type) {
+      const count = type === "up" ? 14 : 11;
+      for (let i = 0; i < count; i++) {
+        const t = count === 1 ? 0.5 : i / (count - 1);
+        const point = pointOnCurve(curve, t);
+        const particle = document.createElement("span");
+        particle.className = `transfer-particle ${type}`;
+        particle.style.setProperty("--x", String((point.x / 800) * 100));
+        particle.style.setProperty("--y", String((point.y / 900) * 100));
+        particle.style.setProperty("--size", `${type === "up" ? 13 + (i % 3) * 3 : 11 + (i % 2) * 4}px`);
+        particle.style.setProperty("--delay", `${i * 34}ms`);
+        particle.style.setProperty("--dx", `${type === "up" ? -10 + (i % 5) * 5 : -8 + (i % 4) * 5}px`);
+        particle.style.setProperty("--dy", `${type === "up" ? -18 - (i % 4) * 5 : 18 + (i % 3) * 6}px`);
+        transferEffects.appendChild(particle);
+        window.setTimeout(() => particle.remove(), 1150 + i * 34);
+      }
+    }
+
     function animateJump(from, to) {
       const curve = jumpCurve(from, to);
+      const type = to > from ? "up" : "down";
       const duration = Math.min(1250, Math.max(560, Math.abs(to - from) * 22));
-      token.classList.add("step");
+      setActiveJump(from, to, true);
+      createTransferParticles(curve, type);
+      token.classList.add(type === "up" ? "boost" : "drop");
       return new Promise((resolve) => {
         const startTime = performance.now();
         function frame(now) {
@@ -855,7 +946,8 @@
             return;
           }
           state.position = to;
-          token.classList.remove("step");
+          token.classList.remove("boost", "drop");
+          setActiveJump(from, to, false);
           placeToken();
           resolve();
         }
