@@ -124,6 +124,17 @@
     .cell:hover { box-shadow: inset 0 0 0 3px rgba(35, 109, 134, 0.45); }
     .cell.goal { background: rgba(255, 224, 128, 0.88); }
     .cell.current { box-shadow: inset 0 0 0 4px rgba(184, 69, 54, 0.75); }
+    .cell.transfer-cell {
+      box-shadow: inset 0 0 0 2px rgba(211, 155, 54, 0.46);
+    }
+
+    .cell.transfer-cell .cell-number {
+      color: #8a5d11;
+    }
+
+    .cell.current {
+      box-shadow: inset 0 0 0 4px rgba(184, 69, 54, 0.75);
+    }
 
     .board-wrap.transfer-mode .cell:not(.transfer-focus) {
       opacity: 0.2;
@@ -150,10 +161,12 @@
 
     .cell-name {
       position: absolute;
+      left: 5px;
       right: 5px;
       bottom: 4px;
       max-width: calc(100% - 10px);
-      text-align: right;
+      margin: 0 auto;
+      text-align: center;
       font: 700 clamp(6px, 0.72vw, 10px) / 1.08 "Segoe UI", Arial, sans-serif;
       color: rgba(32, 24, 19, 0.78);
       overflow-wrap: anywhere;
@@ -176,7 +189,7 @@
     }
 
     .jump.up { stroke: var(--green); marker-end: url(#arrowHead); }
-    .jump.down { stroke: var(--red); marker-end: url(#arrowHeadRed); }
+    .jump.down { stroke: var(--gold); marker-end: url(#arrowHeadRed); }
 
     .jump.active {
       stroke-width: 6;
@@ -513,7 +526,7 @@
               <path d="M 0 0 L 10 5 L 0 10 z" fill="#4d8648"></path>
             </marker>
             <marker id="arrowHeadRed" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#b84536"></path>
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#d39b36"></path>
             </marker>
           </defs>
         </svg>
@@ -828,10 +841,11 @@
           cell.type = "button";
           cell.className = "cell";
           if (n === totalCells) cell.classList.add("goal");
+          if (jumps[n]) cell.classList.add("transfer-cell");
           cell.dataset.cell = String(n);
           const color = colors[n % colors.length];
           cell.innerHTML = `
-            <span class="cell-number">${n}</span>
+            <span class="cell-number">${n}${jumps[n] ? "*" : ""}</span>
             ${symbolSvg(n, color)}
             <span class="cell-name">${cellNames[n - 1]}</span>
           `;
@@ -960,7 +974,7 @@
     function animateJump(from, to) {
       const curve = jumpCurve(from, to);
       const type = to > from ? "up" : "down";
-      const duration = Math.min(1250, Math.max(560, Math.abs(to - from) * 22));
+      const duration = 1800;
       setTransferFocus(from, to, true);
       setActiveJump(from, to, true);
       createTransferParticles(curve, type);
@@ -986,6 +1000,13 @@
         }
         requestAnimationFrame(frame);
       });
+    }
+
+    async function dramaticTransfer(from, to) {
+      setTransferFocus(from, to, true);
+      setActiveJump(from, to, true);
+      await sleep(1200);
+      await animateJump(from, to);
     }
 
     function readDebugCell() {
@@ -1024,10 +1045,7 @@
       debugJumpButton.disabled = true;
       state.position = from;
       placeToken();
-      setTransferFocus(from, to, true);
-      setActiveJump(from, to, true);
-      await sleep(520);
-      await animateJump(from, to);
+      await dramaticTransfer(from, to);
       writeLog(`Отладка: ${from} -> ${to} по линии.`);
       rollButton.disabled = state.position === totalCells;
       state.moving = false;
@@ -1066,10 +1084,7 @@
         const next = jumps[from];
         const up = next > state.position;
         writeLog(`${cellNames[from - 1]}: ${up ? "подъем" : "возврат"} на ${next}.`);
-        setTransferFocus(from, next, true);
-        setActiveJump(from, next, true);
-        await sleep(620);
-        await animateJump(from, next);
+        await dramaticTransfer(from, next);
       }
 
       if (state.position === totalCells) {
