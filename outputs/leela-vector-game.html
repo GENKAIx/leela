@@ -36,8 +36,8 @@
     }
 
     .app {
-      width: min(1080px, 100%);
-      height: min(900px, calc(100vh - 24px));
+      width: min(1180px, 100%);
+      height: min(920px, calc(100vh - 24px));
       display: grid;
       grid-template-rows: auto minmax(0, 1fr) auto;
       gap: 14px;
@@ -92,6 +92,15 @@
       opacity: 1;
       pointer-events: auto;
       transform: scale(1);
+    }
+
+    .stage.board {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      border: 0;
+      background: #b88938;
+      box-shadow: none;
     }
 
     .answer-view {
@@ -186,6 +195,7 @@
     }
 
     .petal {
+      --angle: 0deg;
       position: absolute;
       width: 34%;
       height: 54%;
@@ -198,14 +208,14 @@
       animation: lotusBreathe 2.7s ease-in-out infinite;
     }
 
-    .petal:nth-child(1) { transform: rotate(0deg); }
-    .petal:nth-child(2) { transform: rotate(45deg); animation-delay: 0.08s; }
-    .petal:nth-child(3) { transform: rotate(90deg); animation-delay: 0.16s; }
-    .petal:nth-child(4) { transform: rotate(135deg); animation-delay: 0.24s; }
-    .petal:nth-child(5) { transform: rotate(180deg); animation-delay: 0.32s; }
-    .petal:nth-child(6) { transform: rotate(225deg); animation-delay: 0.4s; }
-    .petal:nth-child(7) { transform: rotate(270deg); animation-delay: 0.48s; }
-    .petal:nth-child(8) { transform: rotate(315deg); animation-delay: 0.56s; }
+    .petal:nth-child(1) { --angle: 0deg; }
+    .petal:nth-child(2) { --angle: 45deg; animation-delay: 0.08s; }
+    .petal:nth-child(3) { --angle: 90deg; animation-delay: 0.16s; }
+    .petal:nth-child(4) { --angle: 135deg; animation-delay: 0.24s; }
+    .petal:nth-child(5) { --angle: 180deg; animation-delay: 0.32s; }
+    .petal:nth-child(6) { --angle: 225deg; animation-delay: 0.4s; }
+    .petal:nth-child(7) { --angle: 270deg; animation-delay: 0.48s; }
+    .petal:nth-child(8) { --angle: 315deg; animation-delay: 0.56s; }
 
     .lotus-core {
       width: 30%;
@@ -228,8 +238,8 @@
     }
 
     @keyframes lotusBreathe {
-      0%, 100% { scale: 0.92; opacity: 0.58; }
-      50% { scale: 1.08; opacity: 1; }
+      0%, 100% { transform: rotate(var(--angle)) scale(0.86); opacity: 0.52; }
+      50% { transform: rotate(var(--angle)) scale(1.12); opacity: 1; }
     }
 
     @keyframes lotusRing {
@@ -248,16 +258,48 @@
       place-items: center;
       background: #b88938;
       position: relative;
+      animation: boardReveal 360ms cubic-bezier(.2,.8,.2,1);
     }
 
     .board-wrap {
-      width: min(760px, 100%);
+      width: min(100%, calc((100vh - 150px) * 8 / 9));
+      max-width: 1180px;
       aspect-ratio: 8 / 9;
       position: relative;
       border: 3px solid var(--line);
       background: var(--paper);
       overflow: hidden;
       box-shadow: inset 0 0 0 2px rgba(255, 248, 233, 0.7);
+    }
+
+    .stage.board .board-view {
+      padding: clamp(8px, 1.4vmin, 18px);
+      background:
+        radial-gradient(circle at 50% 45%, rgba(255, 248, 233, 0.26), transparent 38%),
+        #b88938;
+    }
+
+    .stage.board .board-wrap {
+      width: min(calc(100vw - 20px), calc((100vh - 20px) * 8 / 9));
+      height: min(calc(100vh - 20px), calc((100vw - 20px) * 9 / 8));
+      max-width: none;
+      box-shadow:
+        0 24px 70px rgba(32, 24, 19, 0.34),
+        inset 0 0 0 2px rgba(255, 248, 233, 0.7);
+    }
+
+    .board-wrap.roll-mode {
+      animation: boardPulse 900ms ease-in-out infinite alternate;
+    }
+
+    @keyframes boardReveal {
+      from { opacity: 0; transform: scale(0.94); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes boardPulse {
+      from { filter: saturate(0.95) brightness(0.98); }
+      to { filter: saturate(1.18) brightness(1.05); }
     }
 
     .board-wrap.transfer-mode .plane-bands {
@@ -438,16 +480,24 @@
       display: grid;
       place-items: center;
       box-shadow: inset 0 -7px 0 rgba(32, 24, 19, 0.08), 0 12px 24px rgba(32, 24, 19, 0.2);
+      transition: right 240ms ease, top 240ms ease, transform 240ms ease, box-shadow 240ms ease;
+    }
+
+    .board-wrap.roll-mode .die-float {
+      right: 50%;
+      top: 50%;
+      transform: translate(50%, -50%) scale(1.2);
+      box-shadow: inset 0 -7px 0 rgba(32, 24, 19, 0.08), 0 24px 52px rgba(32, 24, 19, 0.36);
     }
 
     .die-float.rolling { animation: diceRoll 520ms cubic-bezier(.2,.8,.2,1); }
     .die-float svg { width: 68px; height: 68px; }
 
     @keyframes diceRoll {
-      0% { transform: rotate(0deg) scale(1); }
-      35% { transform: rotate(18deg) scale(1.08); }
-      70% { transform: rotate(-14deg) scale(0.96); }
-      100% { transform: rotate(0deg) scale(1); }
+      0% { rotate: 0deg; scale: 1; }
+      35% { rotate: 18deg; scale: 1.16; }
+      70% { rotate: -14deg; scale: 0.96; }
+      100% { rotate: 0deg; scale: 1; }
     }
 
     .composer {
@@ -880,6 +930,7 @@
     }
 
     async function rollDiceAnimation(finalValue) {
+      boardWrap.classList.add("roll-mode");
       die.classList.remove("rolling");
       void die.offsetWidth;
       die.classList.add("rolling");
@@ -888,6 +939,7 @@
         die.innerHTML = diceSvg(value);
         await sleep(45 + i * 7);
       }
+      boardWrap.classList.remove("roll-mode");
       state.lastRoll = finalValue;
       updateStateLine();
     }
