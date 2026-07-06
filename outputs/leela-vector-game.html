@@ -76,22 +76,26 @@
     }
 
     .answer-view,
+    .roll-view,
     .board-view,
     .thinking-view {
       grid-area: 1 / 1;
       min-height: 0;
       opacity: 0;
       pointer-events: none;
-      transform: scale(0.99);
-      transition: opacity 220ms ease, transform 220ms ease;
+      transform: scale(0.985);
+      filter: blur(8px);
+      transition: opacity 680ms ease, transform 680ms cubic-bezier(.2,.8,.2,1), filter 680ms ease;
     }
 
     .stage.answer .answer-view,
+    .stage.roll .roll-view,
     .stage.board .board-view,
     .stage.thinking .thinking-view {
       opacity: 1;
       pointer-events: auto;
       transform: scale(1);
+      filter: blur(0);
     }
 
     .stage.board {
@@ -109,6 +113,61 @@
       padding: clamp(18px, 3vw, 34px);
       gap: 18px;
       overflow: hidden;
+    }
+
+    .roll-view {
+      display: grid;
+      place-items: center;
+      padding: clamp(24px, 4vw, 48px);
+      background:
+        radial-gradient(circle at 50% 48%, rgba(211, 155, 54, 0.25), transparent 20rem),
+        linear-gradient(180deg, rgba(255, 248, 233, 0.96), rgba(242, 223, 189, 0.94));
+    }
+
+    .roll-ritual {
+      display: grid;
+      place-items: center;
+      gap: 22px;
+    }
+
+    .roll-die {
+      width: clamp(116px, 22vmin, 190px);
+      height: clamp(116px, 22vmin, 190px);
+      border: 4px solid var(--line);
+      background: #fffdf5;
+      display: grid;
+      place-items: center;
+      box-shadow:
+        inset 0 -10px 0 rgba(32, 24, 19, 0.08),
+        0 24px 60px rgba(32, 24, 19, 0.22);
+      animation: dieFloat 2.4s ease-in-out infinite;
+    }
+
+    .roll-die svg {
+      width: 76%;
+      height: 76%;
+    }
+
+    .roll-die.rolling {
+      animation: dieFloat 2.4s ease-in-out infinite, diceRollLarge 620ms cubic-bezier(.2,.8,.2,1) infinite;
+    }
+
+    .roll-caption {
+      color: var(--muted);
+      font-weight: 850;
+      letter-spacing: 0;
+    }
+
+    @keyframes dieFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes diceRollLarge {
+      0% { rotate: 0deg; scale: 1; }
+      35% { rotate: 18deg; scale: 1.12; }
+      70% { rotate: -16deg; scale: 0.96; }
+      100% { rotate: 0deg; scale: 1; }
     }
 
     .messages {
@@ -258,7 +317,7 @@
       place-items: center;
       background: #b88938;
       position: relative;
-      animation: boardReveal 360ms cubic-bezier(.2,.8,.2,1);
+      animation: boardReveal 820ms cubic-bezier(.2,.8,.2,1);
     }
 
     .board-wrap {
@@ -293,7 +352,7 @@
     }
 
     @keyframes boardReveal {
-      from { opacity: 0; transform: scale(0.94); }
+      from { opacity: 0; transform: scale(0.92); filter: blur(10px) saturate(0.8); }
       to { opacity: 1; transform: scale(1); }
     }
 
@@ -402,9 +461,34 @@
       animation: activePath 760ms ease-in-out infinite alternate;
     }
 
+    .move-trail {
+      fill: none;
+      stroke: rgba(32, 24, 19, 0.72);
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      marker-end: url(#stepHead);
+      filter: drop-shadow(0 0 6px rgba(255, 248, 233, 0.76));
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: traceStep 620ms ease-out forwards;
+    }
+
+    .move-trail.fade {
+      animation: traceFade 900ms ease forwards;
+    }
+
     @keyframes activePath {
       from { stroke-dasharray: 10 10; stroke-dashoffset: 20; }
       to { stroke-dasharray: 18 8; stroke-dashoffset: 0; }
+    }
+
+    @keyframes traceStep {
+      to { stroke-dashoffset: 0; }
+    }
+
+    @keyframes traceFade {
+      to { opacity: 0; }
     }
 
     .token {
@@ -563,6 +647,13 @@
         </section>
       </div>
 
+      <div class="roll-view">
+        <div class="roll-ritual">
+          <div class="roll-die" id="rollDie" aria-label="Бросок кубика"></div>
+          <div class="roll-caption">Кубик отвечает на твой ход</div>
+        </div>
+      </div>
+
       <div class="thinking-view">
         <div class="lotus-loader" aria-label="Мастер размышляет">
           <span class="petal"></span>
@@ -594,6 +685,9 @@
               </marker>
               <marker id="arrowHeadGold" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
                 <path d="M 0 0 L 10 5 L 0 10 z" fill="#d39b36"></path>
+              </marker>
+              <marker id="stepHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.8" markerHeight="3.8" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#201813"></path>
               </marker>
             </defs>
           </svg>
@@ -654,6 +748,7 @@
     const boardWrap = document.getElementById("boardWrap");
     const token = document.getElementById("token");
     const die = document.getElementById("die");
+    const rollDie = document.getElementById("rollDie");
     const pathLines = document.getElementById("pathLines");
     const transferEffects = document.getElementById("transferEffects");
 
@@ -929,30 +1024,52 @@
       return Math.floor(Math.random() * 6) + 1;
     }
 
-    async function rollDiceAnimation(finalValue) {
-      boardWrap.classList.add("roll-mode");
-      die.classList.remove("rolling");
-      void die.offsetWidth;
-      die.classList.add("rolling");
-      for (let i = 0; i < 12; i++) {
-        const value = i === 11 ? finalValue : rollDiceValue();
-        die.innerHTML = diceSvg(value);
-        await sleep(45 + i * 7);
+    async function rollDiceAnimation(finalValue, node = rollDie) {
+      node.classList.remove("rolling");
+      void node.offsetWidth;
+      node.classList.add("rolling");
+      for (let i = 0; i < 16; i++) {
+        const value = i === 15 ? finalValue : rollDiceValue();
+        node.innerHTML = diceSvg(value);
+        await sleep(58 + i * 9);
       }
-      boardWrap.classList.remove("roll-mode");
+      node.innerHTML = diceSvg(finalValue);
+      node.classList.remove("rolling");
       state.lastRoll = finalValue;
       updateStateLine();
+    }
+
+    function clearMoveTrail() {
+      pathLines.querySelectorAll(".move-trail").forEach((node) => node.remove());
+    }
+
+    function drawMoveTrail(from, to) {
+      if (!from || !to || from === to) return;
+      const start = cellPoint(from);
+      const end = cellPoint(to);
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("class", "move-trail");
+      path.setAttribute("d", `M ${start.x} ${start.y} L ${end.x} ${end.y}`);
+      pathLines.appendChild(path);
+      const length = path.getTotalLength();
+      path.style.strokeDasharray = String(length);
+      path.style.strokeDashoffset = String(length);
+      window.setTimeout(() => path.classList.add("fade"), 3200);
+      window.setTimeout(() => path.remove(), 4300);
     }
 
     async function animateTo(target) {
       const direction = target >= state.position ? 1 : -1;
       while (state.position !== target) {
-        state.position += direction;
+        const from = state.position;
+        const next = state.position + direction;
+        drawMoveTrail(from, next);
+        state.position = next;
         token.classList.add("step");
         placeToken();
-        await sleep(155);
+        await sleep(300);
         token.classList.remove("step");
-        await sleep(70);
+        await sleep(130);
       }
     }
 
@@ -1028,9 +1145,15 @@
     }
 
     async function showBoardForMove(roll) {
+      setStage("roll");
+      await sleep(360);
+      await rollDiceAnimation(roll, rollDie);
+      await sleep(520);
+
       setStage("board");
-      await sleep(250);
-      await rollDiceAnimation(roll);
+      die.innerHTML = diceSvg(roll);
+      clearMoveTrail();
+      await sleep(860);
 
       let transition = null;
       if (!state.entered) {
@@ -1038,6 +1161,7 @@
           state.entered = true;
           state.position = 1;
           placeToken();
+          await sleep(900);
         }
         await sleep(900);
         return transition;
@@ -1176,6 +1300,7 @@
     drawJumps();
     token.innerHTML = tokenSvg();
     die.innerHTML = diceSvg(1);
+    rollDie.innerHTML = diceSvg(1);
     updateCellCard(0);
     updateStateLine();
     addMessage("master", "Я приветствую тебя в пространстве Лилы.\n\nПеред броском выполни два условия:\n\n1. Четко сформулируй свое Намерение — запрос к игре, без красивой дымки и без защиты.\n2. Подтверди готовность играть без масок и смотреть в лицо фактам.\n\nКогда ответишь, будет сделан первый бросок на вход. Войти можно только через 6.");
