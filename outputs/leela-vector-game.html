@@ -1312,11 +1312,31 @@
       return Math.floor(Math.random() * 6) + 1;
     }
 
-    function isEntryReady(text) {
+    function getEntryStatus(text) {
       const normalized = text.toLowerCase();
       const hasIntention = /(намерени|запрос|хочу|увид|поня|разобра|осозна|провер)/i.test(normalized);
-      const hasReadiness = /(готов|подтверж|соглас|без мас|смотреть|факт)/i.test(normalized);
-      return hasIntention && hasReadiness;
+      const hasReadiness = /(готов|подтверж|соглас|без мас|смотреть|факт|начн|старт|поехали|давай)/i.test(normalized);
+      return {
+        ready: hasIntention && hasReadiness,
+        hasIntention,
+        hasReadiness
+      };
+    }
+
+    function entryMissingReply(status) {
+      if (status.hasReadiness && !status.hasIntention) {
+        return "Готовность услышана. Но вход еще не открыт: ты не назвала Намерение.\n\nНапиши одним сообщением, что именно ты хочешь вскрыть через игру, и подтверди готовность смотреть на факты без маски.\n\nПример формы: «Мое намерение — понять, почему я избегаю близости. Готова смотреть честно и без масок».";
+      }
+
+      if (status.hasIntention && !status.hasReadiness) {
+        return "Запрос есть, но не хватает второго условия: готовности смотреть без маски.\n\nПодтверди это прямо. Не как красивую фразу, а как согласие выдержать неприятные факты, если доска их покажет.";
+      }
+
+      return "Пока это не вход в игру. Лила ждет не приветствие и не команду «начать», а два условия в одном ответе:\n\n1. Твое Намерение — что именно ты хочешь вскрыть через игру.\n2. Готовность играть без масок и смотреть в лицо фактам.";
+    }
+
+    function isEntryReady(text) {
+      return getEntryStatus(text).ready;
     }
 
     function randomBetween(min, max) {
@@ -1586,18 +1606,9 @@
         setStage("thinking");
         await sleep(1400);
 
-        if (!isEntryReady(text)) {
-          let reply;
-          try {
-            reply = await askGpt(text, {
-              noRoll: true,
-              reason: "awaiting_intention",
-              position: state.position,
-              cell: cellNames[state.position - 1]
-            });
-          } catch {
-            reply = localMasterReply(text, { noRoll: true });
-          }
+        const entryStatus = getEntryStatus(text);
+        if (!entryStatus.ready) {
+          const reply = entryMissingReply(entryStatus);
 
           addMessage("master", reply);
           updateCellCard(0);
