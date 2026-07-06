@@ -592,6 +592,35 @@
       return { col, row, x: (col + 0.5) * 100, y: (row + 0.5) * 100 };
     }
 
+    function jumpCurve(from, to) {
+      const a = cellPoint(Number(from));
+      const b = cellPoint(Number(to));
+      const bend = to > from ? -42 : 42;
+      return {
+        start: a,
+        controlA: { x: a.x + bend, y: (a.y + b.y) / 2 },
+        controlB: { x: b.x - bend, y: (a.y + b.y) / 2 },
+        end: b
+      };
+    }
+
+    function jumpPathData(from, to) {
+      const curve = jumpCurve(from, to);
+      return `M ${curve.start.x} ${curve.start.y} C ${curve.controlA.x} ${curve.controlA.y}, ${curve.controlB.x} ${curve.controlB.y}, ${curve.end.x} ${curve.end.y}`;
+    }
+
+    function pointOnCurve(curve, t) {
+      const u = 1 - t;
+      const tt = t * t;
+      const uu = u * u;
+      const uuu = uu * u;
+      const ttt = tt * t;
+      return {
+        x: (uuu * curve.start.x) + (3 * uu * t * curve.controlA.x) + (3 * u * tt * curve.controlB.x) + (ttt * curve.end.x),
+        y: (uuu * curve.start.y) + (3 * uu * t * curve.controlA.y) + (3 * u * tt * curve.controlB.y) + (ttt * curve.end.y)
+      };
+    }
+
     function symbolSvg(type, color) {
       const common = `fill="none" stroke="${color}" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"`;
       const fill = `fill="${color}" opacity="0.14"`;
@@ -691,12 +720,9 @@
     function drawJumps() {
       pathLines.querySelectorAll(".jump").forEach((node) => node.remove());
       Object.entries(jumps).forEach(([from, to]) => {
-        const a = cellPoint(Number(from));
-        const b = cellPoint(Number(to));
-        const bend = to > from ? -42 : 42;
         const curve = document.createElementNS("http://www.w3.org/2000/svg", "path");
         curve.setAttribute("class", `jump ${to > from ? "up" : "down"}`);
-        curve.setAttribute("d", `M ${a.x} ${a.y} C ${a.x + bend} ${(a.y + b.y) / 2}, ${b.x - bend} ${(a.y + b.y) / 2}, ${b.x} ${b.y}`);
+        curve.setAttribute("d", jumpPathData(Number(from), Number(to)));
         pathLines.appendChild(curve);
       });
     }
@@ -742,6 +768,31 @@
       }
     }
 
+    function animateJump(from, to) {
+      const curve = jumpCurve(from, to);
+      const duration = Math.min(1250, Math.max(560, Math.abs(to - from) * 22));
+      token.classList.add("step");
+      return new Promise((resolve) => {
+        const startTime = performance.now();
+        function frame(now) {
+          const elapsed = Math.min(1, (now - startTime) / duration);
+          const eased = 1 - Math.pow(1 - elapsed, 3);
+          const point = pointOnCurve(curve, eased);
+          token.style.left = `${(point.x / 800) * 100}%`;
+          token.style.top = `${(point.y / 900) * 100}%`;
+          if (elapsed < 1) {
+            requestAnimationFrame(frame);
+            return;
+          }
+          state.position = to;
+          token.classList.remove("step");
+          placeToken();
+          resolve();
+        }
+        requestAnimationFrame(frame);
+      });
+    }
+
     async function roll() {
       if (state.moving) return;
       state.moving = true;
@@ -774,7 +825,7 @@
         const up = next > state.position;
         writeLog(`${cellNames[state.position - 1]}: ${up ? "подъем" : "возврат"} на ${next}.`);
         await sleep(320);
-        await animateTo(next);
+        await animateJump(state.position, next);
       }
 
       if (state.position === totalCells) {
