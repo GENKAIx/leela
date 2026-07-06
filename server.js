@@ -3,6 +3,25 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = __dirname;
+
+function loadLocalEnv() {
+  const envPath = path.join(root, ".env.local");
+  if (!fs.existsSync(envPath)) return;
+
+  const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const separator = trimmed.indexOf("=");
+    if (separator === -1) continue;
+    const key = trimmed.slice(0, separator).trim();
+    const value = trimmed.slice(separator + 1).trim().replace(/^["']|["']$/g, "");
+    if (key && !process.env[key]) process.env[key] = value;
+  }
+}
+
+loadLocalEnv();
+
 const port = Number(process.env.PORT || 4173);
 const model = process.env.OPENROUTER_MODEL || "x-ai/grok-4";
 const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";

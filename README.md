@@ -20,9 +20,16 @@
 
 Для настоящего общения с Grok через OpenRouter запустите локальный сервер:
 
+Создайте рядом с `server.js` файл `.env.local`:
+
+```text
+OPENROUTER_API_KEY=ваш_ключ
+OPENROUTER_MODEL=x-ai/grok-4
+```
+
+Затем запустите сервер:
+
 ```powershell
-$env:OPENROUTER_API_KEY="ваш_ключ"
-$env:OPENROUTER_MODEL="x-ai/grok-4"
 node server.js
 ```
 
