@@ -639,7 +639,6 @@
       transition: left 560ms cubic-bezier(.18,.82,.2,1), top 560ms cubic-bezier(.18,.82,.2,1), transform 260ms ease;
       filter: drop-shadow(0 8px 8px rgba(32, 24, 19, 0.3));
       pointer-events: none;
-      opacity: 0;
     }
 
     .token.step { transform: translate(-50%, -68%) scale(1.18); }
@@ -990,7 +989,7 @@
       phase: "awaiting_intention",
       intention: "",
       entered: false,
-      position: 0,
+      position: 1,
       lastRoll: null,
       busy: false,
       history: []
@@ -1045,7 +1044,7 @@
 
     function renderMasterCard(text, move) {
       if (!move) return escapeHtml(text);
-      const cellTitle = move.cell ? `${move.position}. ${move.cell}` : "Порог игры";
+      const cellTitle = move.enteredNow || move.enteredBefore ? `${move.position}. ${move.cell}` : "Порог игры";
       const transition = move.transition;
       const transitionLabel = transition ? `${transition.type}: ${transition.from} -> ${transition.to}` : "без переноса";
       const transitionClass = transition ? (transition.to > transition.from ? "up" : "down") : "";
@@ -1079,7 +1078,7 @@
           </div>
           <div class="move-meta">
             <span class="move-pill">Кубик: ${move.roll}</span>
-            <span class="move-pill">Позиция: ${move.position || "вне доски"}</span>
+            <span class="move-pill">Позиция: ${move.enteredNow || move.enteredBefore ? move.position : "порог"}</span>
             <span class="move-pill ${transitionClass}">${escapeHtml(transitionLabel)}</span>
           </div>
         </div>
@@ -1238,7 +1237,6 @@
     function placeToken() {
       if (!state.position) return;
       const p = cellPoint(state.position);
-      token.style.opacity = "1";
       token.style.left = `${(p.x / 800) * 100}%`;
       token.style.top = `${(p.y / 900) * 100}%`;
       document.querySelectorAll(".cell.current").forEach((c) => c.classList.remove("current"));
@@ -1337,23 +1335,6 @@
       }
     }
 
-    async function animateEntryToBoard() {
-      const gate = { x: 400, y: 960 };
-      const first = cellPoint(1);
-      token.style.opacity = "0";
-      token.style.left = `${(gate.x / 800) * 100}%`;
-      token.style.top = `${(gate.y / 900) * 100}%`;
-      await sleep(120);
-      token.style.opacity = "1";
-      drawTrailBetweenPoints(gate, first);
-      state.position = 1;
-      token.classList.add("step");
-      placeToken();
-      pulseCell(1);
-      await sleep(760);
-      token.classList.remove("step");
-    }
-
     function setActiveJump(from, to, active) {
       const path = pathLines.querySelector(`.jump[data-from="${from}"][data-to="${to}"]`);
       if (path) path.classList.toggle("active", active);
@@ -1440,7 +1421,9 @@
       if (!state.entered) {
         if (roll === 6) {
           state.entered = true;
-          await animateEntryToBoard();
+          state.position = 1;
+          placeToken();
+          pulseCell(1);
           await sleep(900);
         }
         await sleep(900);
@@ -1581,6 +1564,7 @@
     token.innerHTML = tokenSvg();
     die.innerHTML = diceSvg(1);
     rollDie.innerHTML = diceSvg(1);
+    placeToken();
     updateCellCard(0);
     updateStateLine();
     addMessage("master", "Я приветствую тебя в пространстве Лилы.\n\nПеред броском выполни два условия:\n\n1. Четко сформулируй свое Намерение — запрос к игре, без красивой дымки и без защиты.\n2. Подтверди готовность играть без масок и смотреть в лицо фактам.\n\nКогда ответишь, будет сделан первый бросок на вход. Войти можно только через 6.");
