@@ -779,7 +779,34 @@
       };
     }
 
-    function symbolSvg(kind, color) {
+    function uniqueCellSigil(n, color) {
+      const angle = (n * 47) % 360;
+      const sides = 3 + (n % 5);
+      const radius = 4 + (n % 4);
+      const dots = Array.from({ length: 4 }, (_, i) => {
+        const bit = (n >> i) & 1;
+        const x = 48 + (i % 2) * 8;
+        const y = 45 + Math.floor(i / 2) * 8;
+        return bit ? `<circle cx="${x}" cy="${y}" r="1.8" fill="${color}"></circle>` : `<circle cx="${x}" cy="${y}" r="1.35" fill="none" stroke="${color}" stroke-width="1.4"></circle>`;
+      }).join("");
+      const points = Array.from({ length: sides }, (_, i) => {
+        const a = ((Math.PI * 2) / sides) * i - Math.PI / 2;
+        return `${(14 + Math.cos(a) * radius).toFixed(1)},${(50 + Math.sin(a) * radius).toFixed(1)}`;
+      }).join(" ");
+      return `
+        <g opacity="0.78">
+          <polygon points="${points}" fill="none" stroke="${color}" stroke-width="1.7" transform="rotate(${angle} 14 50)"></polygon>
+          <path d="M46 14h10M51 9v10" fill="none" stroke="${color}" stroke-width="1.7" stroke-linecap="round" transform="rotate(${(n * 31) % 180} 51 14)"></path>
+          ${dots}
+        </g>
+      `;
+    }
+
+    function personalizeSvg(svg, n, color) {
+      return svg.replace("</svg>", `${uniqueCellSigil(n, color)}</svg>`);
+    }
+
+    function symbolSvg(kind, color, n) {
       const common = `fill="none" stroke="${color}" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"`;
       const fill = `fill="${color}" opacity="0.14"`;
       const symbols = {
@@ -825,7 +852,7 @@
         cosmic: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="7" fill="${color}" opacity="0.3"/><path ${common} d="M10 32c8-11 36-11 44 0-8 11-36 11-44 0zM32 10c11 8 11 36 0 44-11-8-11-36 0-44zM17 17l30 30M47 17 17 47"/></svg>`,
         default: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="20" ${fill}/><path ${common} d="M32 7v50M7 32h50M16 16l32 32M48 16 16 48"/></svg>`
       };
-      return symbols[kind] || symbols.default;
+      return personalizeSvg(symbols[kind] || symbols.default, n, color);
     }
 
     function symbolKindForCell(n) {
@@ -921,7 +948,7 @@
           const symbolKind = symbolKindForCell(n);
           cell.innerHTML = `
             <span class="cell-number">${n}${jumps[n] ? "*" : ""}</span>
-            ${symbolSvg(symbolKind, color)}
+            ${symbolSvg(symbolKind, color, n)}
             <span class="cell-name">${cellNames[n - 1]}</span>
           `;
           cell.addEventListener("click", () => showCellCard(n, "Просмотр"));
