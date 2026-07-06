@@ -1077,7 +1077,7 @@
     function renderMasterCard(text, move) {
       if (!move) return escapeHtml(text);
       const cellTitle = move.enteredNow || move.enteredBefore ? `${move.position}. ${move.cell}` : "Порог игры";
-      const routeFrom = move.enteredNow ? "Порог" : move.from || "Порог";
+      const routeFrom = move.enteredNow || !move.enteredBefore ? "Порог" : move.from;
       const routeTo = move.enteredNow || move.enteredBefore ? move.position : "Порог";
       const routeType = move.transition ? (move.transition.to > move.transition.from ? "up" : "down") : "";
       const { sections, questions } = splitReply(text);
@@ -1427,13 +1427,17 @@
       await rollDiceAnimation(roll, rollDie);
       await sleep(520);
 
-      setStage("board");
-      die.innerHTML = diceSvg(roll);
-      await sleep(860);
-
       let transition = null;
       const moveFrom = state.position;
       if (!state.entered) {
+        if (roll !== 6) {
+          return { transition, from: moveFrom, to: state.position, revealed: false };
+        }
+
+        setStage("board");
+        die.innerHTML = diceSvg(roll);
+        await sleep(860);
+
         if (roll === 6) {
           state.entered = true;
           state.position = 1;
@@ -1443,9 +1447,11 @@
           await revealCellScreen();
           return { transition, from: moveFrom, to: state.position, revealed: true };
         }
-        await sleep(900);
-        return { transition, from: moveFrom, to: state.position, revealed: false };
       }
+
+      setStage("board");
+      die.innerHTML = diceSvg(roll);
+      await sleep(860);
 
       let target = state.position + roll;
       if (target > totalCells) target = totalCells - (target - totalCells);
